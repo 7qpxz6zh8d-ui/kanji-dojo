@@ -1505,20 +1505,23 @@ function LearnMode({ cards, setNumber, totalSets, showFurigana, onReview, onDone
   const card = cards[index];
   const hasReadings = (card.on && card.on.length > 0) || (card.kun && card.kun.length > 0);
 
+  const [processing, setProcessing] = useState(false);
+
   const handleReview = async (knew) => {
+    if (processing) return;
+    setProcessing(true);
     const quality = knew ? 2 : 0;
     await onReview(card.char, quality);
     setResults(r => ({
       known: r.known + (knew ? 1 : 0),
       unknown: r.unknown + (knew ? 0 : 1),
     }));
-    // Advance index only — revealedIndex stays behind, so new card is
-    // hidden in the exact same render. No separate setRevealed needed.
     if (index + 1 >= cards.length) {
       setFinished(true);
     } else {
       setIndex(i => i + 1);
     }
+    setProcessing(false);
   };
 
   return (
@@ -1567,14 +1570,16 @@ function LearnMode({ cards, setNumber, totalSets, showFurigana, onReview, onDone
         <div style={styles.binaryRow}>
           <button
             onClick={(e) => { e.stopPropagation(); handleReview(false); }}
-            style={{ ...styles.binaryBtn, background: palette.vermilion }}
+            disabled={processing}
+            style={{ ...styles.binaryBtn, background: palette.vermilion, opacity: processing ? 0.6 : 1 }}
           >
             <div style={styles.binaryBtnLabel}><JP pairs={[['知', 'し'], 'らない']} /></div>
             <div style={styles.binaryBtnSub}>I don't know it</div>
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); handleReview(true); }}
-            style={{ ...styles.binaryBtn, background: palette.jade }}
+            disabled={processing}
+            style={{ ...styles.binaryBtn, background: palette.jade, opacity: processing ? 0.6 : 1 }}
           >
             <div style={styles.binaryBtnLabel}><JP pairs={[['知', 'し'], 'ってる']} /></div>
             <div style={styles.binaryBtnSub}>I know it</div>
