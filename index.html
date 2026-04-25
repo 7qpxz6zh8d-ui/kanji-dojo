@@ -1511,6 +1511,7 @@ function LearnMode({ cards, setNumber, totalSets, showFurigana, onReview, onDone
     if (processingRef.current) return;
     processingRef.current = true;
     setProcessing(true);
+    setRevealedIndex(-1);
     const quality = knew ? 2 : 0;
     await onReview(card.char, quality);
     setResults(r => ({
