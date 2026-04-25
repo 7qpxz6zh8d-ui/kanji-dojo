@@ -1519,12 +1519,14 @@ function LearnMode({ cards, setNumber, totalSets, showFurigana, onReview, onDone
       unknown: r.unknown + (knew ? 0 : 1),
     }));
     if (index + 1 >= cards.length) {
+      processingRef.current = false;
+      setProcessing(false);
       setFinished(true);
     } else {
       setIndex(i => i + 1);
+      processingRef.current = false;
+      setProcessing(false);
     }
-    processingRef.current = false;
-    setProcessing(false);
   };
 
   return (
