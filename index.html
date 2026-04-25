@@ -1447,13 +1447,13 @@ function SetPicker({ sets, onSelectSet, onBack, levelObj }) {
 // ============================================================
 function LearnMode({ cards, setNumber, totalSets, showFurigana, onReview, onDone, onBackToDashboard }) {
   const [index, setIndex] = useState(0);
-  // A card is revealed only when revealedIndex matches the current index.
-  // Advancing to the next card changes index but NOT revealedIndex, so the
-  // new card is always hidden in the same React render — no flash possible.
   const [revealedIndex, setRevealedIndex] = useState(-1);
   const revealed = revealedIndex === index;
   const [results, setResults] = useState({ known: 0, unknown: 0 });
   const [finished, setFinished] = useState(false);
+  // useRef updates synchronously — unlike useState it blocks double-clicks
+  // before React even has a chance to re-render.
+  const processingRef = useRef(false);
 
   if (cards.length === 0) {
     return (
@@ -1508,7 +1508,8 @@ function LearnMode({ cards, setNumber, totalSets, showFurigana, onReview, onDone
   const [processing, setProcessing] = useState(false);
 
   const handleReview = async (knew) => {
-    if (processing) return;
+    if (processingRef.current) return;
+    processingRef.current = true;
     setProcessing(true);
     const quality = knew ? 2 : 0;
     await onReview(card.char, quality);
@@ -1521,6 +1522,7 @@ function LearnMode({ cards, setNumber, totalSets, showFurigana, onReview, onDone
     } else {
       setIndex(i => i + 1);
     }
+    processingRef.current = false;
     setProcessing(false);
   };
 
