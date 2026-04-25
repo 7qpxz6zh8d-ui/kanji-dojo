@@ -1540,17 +1540,19 @@ function LearnMode({ cards, setNumber, totalSets, showFurigana, onReview, onDone
         <button onClick={onDone} style={styles.exitBtn}>✕ End session</button>
       </div>
 
-      <div
-        style={{ ...styles.flashcard, ...(revealed ? styles.flashcardRevealed : {}) }}
-        onClick={(e) => { if (!revealed) { e.stopPropagation(); setRevealedIndex(index); } }}
-      >
+      <div style={{ ...styles.flashcard, ...(revealed ? styles.flashcardRevealed : {}) }}>
         {!revealed ? (
           <>
             {showFurigana && hasReadings && (
               <ReadingRow on={card.on} kun={card.kun} />
             )}
             <div style={styles.flashKanji}>{card.char}</div>
-            <div style={styles.flashHint}>Tap to reveal meaning</div>
+            <button
+              onClick={(e) => { e.stopPropagation(); setRevealedIndex(index); }}
+              style={styles.revealBtn}
+            >
+              Tap to reveal meaning
+            </button>
           </>
         ) : (
           <>
@@ -2572,6 +2574,19 @@ const styles = {
     color: palette.mist,
     letterSpacing: 2,
     textTransform: 'uppercase',
+  },
+  revealBtn: {
+    marginTop: 24,
+    padding: '14px 32px',
+    background: 'transparent',
+    border: `1.5px solid ${palette.washiDark}`,
+    borderRadius: 2,
+    color: palette.mist,
+    fontSize: 12,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+    fontFamily: fontSans,
   },
   flashMeaning: {
     fontFamily: fontDisplay,
