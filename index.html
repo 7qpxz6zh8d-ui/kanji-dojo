@@ -1,0 +1,2956 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>漢字道場 · Kanji Dōjō</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="漢字道場" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23b63a2d'/><text y='.9em' font-size='80' x='10'>書</text></svg>" />
+  <!-- React -->
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <!-- Babel for JSX in browser -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { min-height: 100vh; background: #f4ede0; }
+    body { -webkit-text-size-adjust: 100%; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef, useContext, createContext } = React;
+
+
+// ============================================================
+// KANJI DATABASE
+// Radicals + Grade 1 are fully populated. Grade 2-6 have starter sets.
+// ============================================================
+const KANJI_DATA = {
+  radicals: [
+    { char: '一', meaning: 'one / horizontal stroke', on: 'いち・いつ', kun: 'ひと' },
+    { char: '丨', meaning: 'vertical stroke', on: '', kun: '' },
+    { char: '丶', meaning: 'dot', on: '', kun: '' },
+    { char: '丿', meaning: 'slash / bend', on: '', kun: '' },
+    { char: '乙', meaning: 'second / twist', on: 'おつ', kun: 'きのと' },
+    { char: '亅', meaning: 'hook', on: '', kun: '' },
+    { char: '二', meaning: 'two', on: 'に', kun: 'ふた' },
+    { char: '亠', meaning: 'lid', on: '', kun: '' },
+    { char: '人', meaning: 'person', on: 'じん・にん', kun: 'ひと' },
+    { char: '儿', meaning: 'legs', on: '', kun: '' },
+    { char: '入', meaning: 'enter', on: 'にゅう', kun: 'い・はい' },
+    { char: '八', meaning: 'eight / divide', on: 'はち', kun: 'や・やっ' },
+    { char: '冂', meaning: 'open box', on: '', kun: '' },
+    { char: '冖', meaning: 'cover', on: '', kun: '' },
+    { char: '冫', meaning: 'ice', on: '', kun: '' },
+    { char: '几', meaning: 'table', on: 'き', kun: 'つくえ' },
+    { char: '刀', meaning: 'knife / sword', on: 'とう', kun: 'かたな' },
+    { char: '力', meaning: 'power', on: 'りょく・りき', kun: 'ちから' },
+    { char: '勹', meaning: 'wrap', on: '', kun: '' },
+    { char: '匕', meaning: 'spoon', on: 'ひ', kun: 'さじ' },
+    { char: '十', meaning: 'ten / cross', on: 'じゅう', kun: 'とお・と' },
+    { char: '卜', meaning: 'divination', on: 'ぼく', kun: 'うらな' },
+    { char: '口', meaning: 'mouth', on: 'こう・く', kun: 'くち' },
+    { char: '囗', meaning: 'enclosure', on: '', kun: '' },
+    { char: '土', meaning: 'earth / soil', on: 'ど・と', kun: 'つち' },
+    { char: '士', meaning: 'scholar / warrior', on: 'し', kun: '' },
+    { char: '夕', meaning: 'evening', on: 'せき', kun: 'ゆう' },
+    { char: '大', meaning: 'big / large', on: 'だい・たい', kun: 'おお' },
+    { char: '女', meaning: 'woman', on: 'じょ・にょ', kun: 'おんな・め' },
+    { char: '子', meaning: 'child', on: 'し・す', kun: 'こ' },
+    { char: '宀', meaning: 'roof', on: '', kun: '' },
+    { char: '寸', meaning: 'inch / measure', on: 'すん', kun: '' },
+    { char: '小', meaning: 'small', on: 'しょう', kun: 'ちい・こ・お' },
+    { char: '山', meaning: 'mountain', on: 'さん', kun: 'やま' },
+    { char: '川', meaning: 'river', on: 'せん', kun: 'かわ' },
+    { char: '工', meaning: 'work / craft', on: 'こう・く', kun: '' },
+    { char: '己', meaning: 'self', on: 'こ・き', kun: 'おのれ' },
+    { char: '巾', meaning: 'cloth / towel', on: 'きん', kun: '' },
+    { char: '干', meaning: 'dry / shield', on: 'かん', kun: 'ほ・ひ' },
+    { char: '广', meaning: 'dotted cliff', on: '', kun: '' },
+    { char: '弓', meaning: 'bow (weapon)', on: 'きゅう', kun: 'ゆみ' },
+    { char: '心', meaning: 'heart', on: 'しん', kun: 'こころ' },
+    { char: '戈', meaning: 'halberd', on: 'か', kun: 'ほこ' },
+    { char: '戸', meaning: 'door (single)', on: 'こ', kun: 'と' },
+    { char: '手', meaning: 'hand', on: 'しゅ', kun: 'て' },
+    { char: '日', meaning: 'sun / day', on: 'にち・じつ', kun: 'ひ・か' },
+    { char: '月', meaning: 'moon / month', on: 'げつ・がつ', kun: 'つき' },
+    { char: '木', meaning: 'tree / wood', on: 'もく・ぼく', kun: 'き・こ' },
+    { char: '水', meaning: 'water', on: 'すい', kun: 'みず' },
+    { char: '火', meaning: 'fire', on: 'か', kun: 'ひ' },
+    { char: '爪', meaning: 'claw', on: 'そう', kun: 'つめ' },
+    { char: '父', meaning: 'father', on: 'ふ', kun: 'ちち' },
+    { char: '片', meaning: 'slice / piece', on: 'へん', kun: 'かた' },
+    { char: '牛', meaning: 'cow / ox', on: 'ぎゅう', kun: 'うし' },
+    { char: '犬', meaning: 'dog', on: 'けん', kun: 'いぬ' },
+    { char: '玉', meaning: 'jewel / ball', on: 'ぎょく', kun: 'たま' },
+    { char: '生', meaning: 'life / birth', on: 'せい・しょう', kun: 'い・う・は' },
+    { char: '田', meaning: 'rice field', on: 'でん', kun: 'た' },
+    { char: '目', meaning: 'eye', on: 'もく', kun: 'め' },
+    { char: '石', meaning: 'stone', on: 'せき・しゃく', kun: 'いし' },
+    { char: '立', meaning: 'stand', on: 'りつ', kun: 'た' },
+    { char: '竹', meaning: 'bamboo', on: 'ちく', kun: 'たけ' },
+    { char: '糸', meaning: 'thread', on: 'し', kun: 'いと' },
+    { char: '耳', meaning: 'ear', on: 'じ', kun: 'みみ' },
+    { char: '虫', meaning: 'insect', on: 'ちゅう', kun: 'むし' },
+    { char: '見', meaning: 'see', on: 'けん', kun: 'み' },
+    { char: '貝', meaning: 'shellfish', on: 'ばい', kun: 'かい' },
+    { char: '車', meaning: 'vehicle / car', on: 'しゃ', kun: 'くるま' },
+    { char: '辶', meaning: 'road / proceed', on: '', kun: '' },
+    { char: '金', meaning: 'gold / metal', on: 'きん・こん', kun: 'かね' },
+    { char: '門', meaning: 'gate', on: 'もん', kun: 'かど' },
+    { char: '雨', meaning: 'rain', on: 'う', kun: 'あめ・あま' },
+    { char: '青', meaning: 'blue / green', on: 'せい', kun: 'あお' },
+    { char: '音', meaning: 'sound', on: 'おん・いん', kun: 'おと・ね' },
+    { char: '頁', meaning: 'page / head', on: 'けつ・よう', kun: 'おおがい' },
+    { char: '食', meaning: 'eat / food', on: 'しょく', kun: 'た・く' },
+    { char: '馬', meaning: 'horse', on: 'ば', kun: 'うま・ま' },
+    { char: '魚', meaning: 'fish', on: 'ぎょ', kun: 'うお・さかな' },
+    { char: '鳥', meaning: 'bird', on: 'ちょう', kun: 'とり' },
+  ],
+  grade1: [
+    { char: '一', meaning: 'one', on: 'いち・いつ', kun: 'ひと' },
+    { char: '二', meaning: 'two', on: 'に', kun: 'ふた' },
+    { char: '三', meaning: 'three', on: 'さん', kun: 'み' },
+    { char: '四', meaning: 'four', on: 'し', kun: 'よん・よ' },
+    { char: '五', meaning: 'five', on: 'ご', kun: 'いつ' },
+    { char: '六', meaning: 'six', on: 'ろく', kun: 'む' },
+    { char: '七', meaning: 'seven', on: 'しち', kun: 'なな' },
+    { char: '八', meaning: 'eight', on: 'はち', kun: 'や' },
+    { char: '九', meaning: 'nine', on: 'きゅう・く', kun: 'ここの' },
+    { char: '十', meaning: 'ten', on: 'じゅう', kun: 'とお・と' },
+    { char: '百', meaning: 'hundred', on: 'ひゃく', kun: '' },
+    { char: '千', meaning: 'thousand', on: 'せん', kun: 'ち' },
+    { char: '日', meaning: 'sun / day', on: 'にち・じつ', kun: 'ひ・か' },
+    { char: '月', meaning: 'moon / month', on: 'げつ・がつ', kun: 'つき' },
+    { char: '火', meaning: 'fire', on: 'か', kun: 'ひ' },
+    { char: '水', meaning: 'water', on: 'すい', kun: 'みず' },
+    { char: '木', meaning: 'tree / wood', on: 'もく・ぼく', kun: 'き・こ' },
+    { char: '金', meaning: 'gold / money', on: 'きん・こん', kun: 'かね' },
+    { char: '土', meaning: 'earth / soil', on: 'ど・と', kun: 'つち' },
+    { char: '人', meaning: 'person', on: 'じん・にん', kun: 'ひと' },
+    { char: '子', meaning: 'child', on: 'し・す', kun: 'こ' },
+    { char: '女', meaning: 'woman', on: 'じょ・にょ', kun: 'おんな・め' },
+    { char: '男', meaning: 'man', on: 'だん・なん', kun: 'おとこ' },
+    { char: '大', meaning: 'big', on: 'だい・たい', kun: 'おお' },
+    { char: '小', meaning: 'small', on: 'しょう', kun: 'ちい・こ・お' },
+    { char: '上', meaning: 'up / above', on: 'じょう', kun: 'うえ・あ・のぼ' },
+    { char: '下', meaning: 'down / below', on: 'か・げ', kun: 'した・さ・くだ・お' },
+    { char: '中', meaning: 'middle / inside', on: 'ちゅう', kun: 'なか' },
+    { char: '左', meaning: 'left', on: 'さ', kun: 'ひだり' },
+    { char: '右', meaning: 'right', on: 'う・ゆう', kun: 'みぎ' },
+    { char: '前', meaning: 'front / before', on: 'ぜん', kun: 'まえ' },
+    { char: '後', meaning: 'back / after', on: 'ご・こう', kun: 'あと・うし・のち' },
+    { char: '山', meaning: 'mountain', on: 'さん', kun: 'やま' },
+    { char: '川', meaning: 'river', on: 'せん', kun: 'かわ' },
+    { char: '田', meaning: 'rice field', on: 'でん', kun: 'た' },
+    { char: '空', meaning: 'sky / empty', on: 'くう', kun: 'そら・あ・から' },
+    { char: '天', meaning: 'heaven / sky', on: 'てん', kun: 'あめ・あま' },
+    { char: '気', meaning: 'spirit / air', on: 'き・け', kun: '' },
+    { char: '雨', meaning: 'rain', on: 'う', kun: 'あめ・あま' },
+    { char: '石', meaning: 'stone', on: 'せき・しゃく', kun: 'いし' },
+    { char: '花', meaning: 'flower', on: 'か', kun: 'はな' },
+    { char: '草', meaning: 'grass', on: 'そう', kun: 'くさ' },
+    { char: '竹', meaning: 'bamboo', on: 'ちく', kun: 'たけ' },
+    { char: '森', meaning: 'forest', on: 'しん', kun: 'もり' },
+    { char: '林', meaning: 'woods', on: 'りん', kun: 'はやし' },
+    { char: '虫', meaning: 'insect', on: 'ちゅう', kun: 'むし' },
+    { char: '犬', meaning: 'dog', on: 'けん', kun: 'いぬ' },
+    { char: '貝', meaning: 'shellfish', on: 'ばい', kun: 'かい' },
+    { char: '口', meaning: 'mouth', on: 'こう・く', kun: 'くち' },
+    { char: '目', meaning: 'eye', on: 'もく', kun: 'め' },
+    { char: '耳', meaning: 'ear', on: 'じ', kun: 'みみ' },
+    { char: '手', meaning: 'hand', on: 'しゅ', kun: 'て' },
+    { char: '足', meaning: 'foot / leg', on: 'そく', kun: 'あし・た' },
+    { char: '力', meaning: 'power', on: 'りょく・りき', kun: 'ちから' },
+    { char: '学', meaning: 'study / learn', on: 'がく', kun: 'まな' },
+    { char: '校', meaning: 'school', on: 'こう', kun: '' },
+    { char: '先', meaning: 'previous / ahead', on: 'せん', kun: 'さき' },
+    { char: '生', meaning: 'life / birth', on: 'せい・しょう', kun: 'い・う・は' },
+    { char: '年', meaning: 'year', on: 'ねん', kun: 'とし' },
+    { char: '名', meaning: 'name', on: 'めい・みょう', kun: 'な' },
+    { char: '正', meaning: 'correct', on: 'せい・しょう', kun: 'ただ・まさ' },
+    { char: '字', meaning: 'letter / character', on: 'じ', kun: 'あざ' },
+    { char: '文', meaning: 'text / sentence', on: 'ぶん・もん', kun: 'ふみ' },
+    { char: '本', meaning: 'book / origin', on: 'ほん', kun: 'もと' },
+    { char: '音', meaning: 'sound', on: 'おん・いん', kun: 'おと・ね' },
+    { char: '見', meaning: 'see', on: 'けん', kun: 'み' },
+    { char: '立', meaning: 'stand', on: 'りつ', kun: 'た' },
+    { char: '休', meaning: 'rest', on: 'きゅう', kun: 'やす' },
+    { char: '出', meaning: 'exit / go out', on: 'しゅつ', kun: 'で・だ' },
+    { char: '入', meaning: 'enter', on: 'にゅう', kun: 'い・はい' },
+    { char: '円', meaning: 'yen / circle', on: 'えん', kun: 'まる' },
+    { char: '車', meaning: 'car / vehicle', on: 'しゃ', kun: 'くるま' },
+    { char: '町', meaning: 'town', on: 'ちょう', kun: 'まち' },
+    { char: '村', meaning: 'village', on: 'そん', kun: 'むら' },
+    { char: '王', meaning: 'king', on: 'おう', kun: '' },
+    { char: '玉', meaning: 'jewel / ball', on: 'ぎょく', kun: 'たま' },
+    { char: '糸', meaning: 'thread', on: 'し', kun: 'いと' },
+    { char: '赤', meaning: 'red', on: 'せき・しゃく', kun: 'あか' },
+    { char: '青', meaning: 'blue', on: 'せい', kun: 'あお' },
+    { char: '白', meaning: 'white', on: 'はく・びゃく', kun: 'しろ・しら' },
+    { char: '早', meaning: 'early', on: 'そう・さっ', kun: 'はや' },
+    { char: '夕', meaning: 'evening', on: 'せき', kun: 'ゆう' },
+  ],
+  grade2: [
+    { char: '時', meaning: 'time / hour', on: 'じ', kun: 'とき' },
+    { char: '間', meaning: 'interval / between', on: 'かん・けん', kun: 'あいだ・ま' },
+    { char: '分', meaning: 'minute / part', on: 'ぶん・ふん・ぶ', kun: 'わ' },
+    { char: '今', meaning: 'now', on: 'こん・きん', kun: 'いま' },
+    { char: '朝', meaning: 'morning', on: 'ちょう', kun: 'あさ' },
+    { char: '昼', meaning: 'daytime / noon', on: 'ちゅう', kun: 'ひる' },
+    { char: '夜', meaning: 'night', on: 'や', kun: 'よ・よる' },
+    { char: '毎', meaning: 'every', on: 'まい', kun: '' },
+    { char: '週', meaning: 'week', on: 'しゅう', kun: '' },
+    { char: '曜', meaning: 'weekday', on: 'よう', kun: '' },
+    { char: '春', meaning: 'spring', on: 'しゅん', kun: 'はる' },
+    { char: '夏', meaning: 'summer', on: 'か・げ', kun: 'なつ' },
+    { char: '秋', meaning: 'autumn', on: 'しゅう', kun: 'あき' },
+    { char: '冬', meaning: 'winter', on: 'とう', kun: 'ふゆ' },
+    { char: '東', meaning: 'east', on: 'とう', kun: 'ひがし' },
+    { char: '西', meaning: 'west', on: 'せい・さい', kun: 'にし' },
+    { char: '南', meaning: 'south', on: 'なん', kun: 'みなみ' },
+    { char: '北', meaning: 'north', on: 'ほく', kun: 'きた' },
+    { char: '雪', meaning: 'snow', on: 'せつ', kun: 'ゆき' },
+    { char: '風', meaning: 'wind', on: 'ふう・ふ', kun: 'かぜ・かざ' },
+    { char: '雲', meaning: 'cloud', on: 'うん', kun: 'くも' },
+    { char: '星', meaning: 'star', on: 'せい・しょう', kun: 'ほし' },
+    { char: '海', meaning: 'sea / ocean', on: 'かい', kun: 'うみ' },
+    { char: '魚', meaning: 'fish', on: 'ぎょ', kun: 'うお・さかな' },
+    { char: '鳥', meaning: 'bird', on: 'ちょう', kun: 'とり' },
+    { char: '馬', meaning: 'horse', on: 'ば', kun: 'うま・ま' },
+    { char: '牛', meaning: 'cow', on: 'ぎゅう', kun: 'うし' },
+    { char: '家', meaning: 'house / family', on: 'か・け', kun: 'いえ・や' },
+    { char: '店', meaning: 'shop', on: 'てん', kun: 'みせ' },
+    { char: '市', meaning: 'city / market', on: 'し', kun: 'いち' },
+    { char: '国', meaning: 'country', on: 'こく', kun: 'くに' },
+    { char: '京', meaning: 'capital', on: 'きょう・けい', kun: '' },
+    { char: '道', meaning: 'road / way', on: 'どう', kun: 'みち' },
+    { char: '行', meaning: 'go / line', on: 'こう・ぎょう', kun: 'い・ゆ・おこな' },
+    { char: '来', meaning: 'come', on: 'らい', kun: 'く・き・こ' },
+    { char: '帰', meaning: 'return home', on: 'き', kun: 'かえ' },
+    { char: '食', meaning: 'eat', on: 'しょく', kun: 'た・く' },
+    { char: '飲', meaning: 'drink', on: 'いん', kun: 'の' },
+    { char: '書', meaning: 'write', on: 'しょ', kun: 'か' },
+    { char: '読', meaning: 'read', on: 'どく・とく', kun: 'よ' },
+    { char: '話', meaning: 'speak / story', on: 'わ', kun: 'はな・はなし' },
+    { char: '聞', meaning: 'listen / ask', on: 'ぶん・もん', kun: 'き' },
+    { char: '友', meaning: 'friend', on: 'ゆう', kun: 'とも' },
+    { char: '父', meaning: 'father', on: 'ふ', kun: 'ちち' },
+    { char: '母', meaning: 'mother', on: 'ぼ', kun: 'はは' },
+    { char: '兄', meaning: 'older brother', on: 'けい・きょう', kun: 'あに' },
+    { char: '姉', meaning: 'older sister', on: 'し', kun: 'あね' },
+    { char: '弟', meaning: 'younger brother', on: 'てい・だい', kun: 'おとうと' },
+    { char: '妹', meaning: 'younger sister', on: 'まい', kun: 'いもうと' },
+    { char: '心', meaning: 'heart', on: 'しん', kun: 'こころ' },
+    { char: '体', meaning: 'body', on: 'たい・てい', kun: 'からだ' },
+    { char: '頭', meaning: 'head', on: 'とう・ず', kun: 'あたま' },
+    { char: '顔', meaning: 'face', on: 'がん', kun: 'かお' },
+    { char: '毛', meaning: 'hair / fur', on: 'もう', kun: 'け' },
+    { char: '色', meaning: 'color', on: 'しょく・しき', kun: 'いろ' },
+    { char: '黒', meaning: 'black', on: 'こく', kun: 'くろ' },
+    { char: '黄', meaning: 'yellow', on: 'おう・こう', kun: 'き' },
+    { char: '茶', meaning: 'tea / brown', on: 'ちゃ・さ', kun: '' },
+    { char: '新', meaning: 'new', on: 'しん', kun: 'あたら・あら' },
+    { char: '古', meaning: 'old', on: 'こ', kun: 'ふる' },
+    { char: '高', meaning: 'tall / expensive', on: 'こう', kun: 'たか' },
+    { char: '強', meaning: 'strong', on: 'きょう・ごう', kun: 'つよ・し' },
+    { char: '弱', meaning: 'weak', on: 'じゃく', kun: 'よわ' },
+    { char: '多', meaning: 'many', on: 'た', kun: 'おお' },
+    { char: '少', meaning: 'few / little', on: 'しょう', kun: 'すく・すこ' },
+    { char: '長', meaning: 'long / chief', on: 'ちょう', kun: 'なが' },
+    { char: '太', meaning: 'thick / fat', on: 'たい・た', kun: 'ふと・ふと' },
+    { char: '細', meaning: 'thin / fine', on: 'さい', kun: 'ほそ・こま' },
+    { char: '明', meaning: 'bright', on: 'めい・みょう', kun: 'あか・あき・あ' },
+    { char: '暗', meaning: 'dark', on: 'あん', kun: 'くら' },
+    { char: '広', meaning: 'wide', on: 'こう', kun: 'ひろ' },
+    { char: '近', meaning: 'near', on: 'きん', kun: 'ちか' },
+    { char: '遠', meaning: 'far', on: 'えん・おん', kun: 'とお' },
+    { char: '歩', meaning: 'walk', on: 'ほ・ぶ', kun: 'ある・あゆ' },
+    { char: '走', meaning: 'run', on: 'そう', kun: 'はし' },
+    { char: '止', meaning: 'stop', on: 'し', kun: 'と・や' },
+    { char: '思', meaning: 'think', on: 'し', kun: 'おも' },
+    { char: '知', meaning: 'know', on: 'ち', kun: 'し' },
+    { char: '買', meaning: 'buy', on: 'ばい', kun: 'か' },
+    { char: '売', meaning: 'sell', on: 'ばい', kun: 'う' },
+    { char: '作', meaning: 'make', on: 'さく・さ', kun: 'つく' },
+    { char: '使', meaning: 'use', on: 'し', kun: 'つか' },
+  ],
+  grade3: [
+    { char: '悪', meaning: 'bad / evil', on: 'あく・お', kun: 'わる' },
+    { char: '安', meaning: 'safe / cheap', on: 'あん', kun: 'やす' },
+    { char: '暗', meaning: 'dark', on: 'あん', kun: 'くら' },
+    { char: '医', meaning: 'medicine / doctor', on: 'い', kun: '' },
+    { char: '意', meaning: 'idea / meaning', on: 'い', kun: '' },
+    { char: '院', meaning: 'institution', on: 'いん', kun: '' },
+    { char: '運', meaning: 'luck / carry', on: 'うん', kun: 'はこ' },
+    { char: '駅', meaning: 'station', on: 'えき', kun: '' },
+    { char: '央', meaning: 'center', on: 'おう', kun: '' },
+    { char: '横', meaning: 'side / horizontal', on: 'おう', kun: 'よこ' },
+    { char: '屋', meaning: 'roof / shop', on: 'おく', kun: 'や' },
+    { char: '温', meaning: 'warm', on: 'おん', kun: 'あたた' },
+    { char: '化', meaning: 'change', on: 'か・け', kun: 'ば' },
+    { char: '荷', meaning: 'luggage', on: 'か', kun: 'に' },
+    { char: '界', meaning: 'world', on: 'かい', kun: '' },
+    { char: '階', meaning: 'floor / rank', on: 'かい', kun: '' },
+    { char: '寒', meaning: 'cold', on: 'かん', kun: 'さむ' },
+    { char: '感', meaning: 'feeling', on: 'かん', kun: '' },
+    { char: '漢', meaning: 'Han / Chinese', on: 'かん', kun: '' },
+    { char: '館', meaning: 'building / hall', on: 'かん', kun: 'やかた' },
+    { char: '岸', meaning: 'shore', on: 'がん', kun: 'きし' },
+    { char: '起', meaning: 'wake / rise', on: 'き', kun: 'お' },
+    { char: '期', meaning: 'period / term', on: 'き・ご', kun: '' },
+    { char: '客', meaning: 'guest', on: 'きゃく・かく', kun: '' },
+    { char: '究', meaning: 'research', on: 'きゅう', kun: 'きわ' },
+    { char: '急', meaning: 'hurry', on: 'きゅう', kun: 'いそ' },
+    { char: '球', meaning: 'ball / sphere', on: 'きゅう', kun: 'たま' },
+    { char: '去', meaning: 'leave / past', on: 'きょ・こ', kun: 'さ' },
+    { char: '橋', meaning: 'bridge', on: 'きょう', kun: 'はし' },
+    { char: '業', meaning: 'business', on: 'ぎょう・ごう', kun: 'わざ' },
+    { char: '曲', meaning: 'bent / song', on: 'きょく', kun: 'ま' },
+    { char: '局', meaning: 'bureau', on: 'きょく', kun: '' },
+    { char: '銀', meaning: 'silver', on: 'ぎん', kun: '' },
+    { char: '区', meaning: 'ward / district', on: 'く', kun: '' },
+    { char: '苦', meaning: 'bitter / suffering', on: 'く', kun: 'くる・にが' },
+    { char: '軽', meaning: 'light (weight)', on: 'けい', kun: 'かる' },
+    { char: '血', meaning: 'blood', on: 'けつ', kun: 'ち' },
+    { char: '決', meaning: 'decide', on: 'けつ', kun: 'き' },
+    { char: '研', meaning: 'sharpen / research', on: 'けん', kun: 'と' },
+    { char: '県', meaning: 'prefecture', on: 'けん', kun: '' },
+    { char: '湖', meaning: 'lake', on: 'こ', kun: 'みずうみ' },
+    { char: '庫', meaning: 'storehouse', on: 'こ・く', kun: '' },
+    { char: '港', meaning: 'port / harbor', on: 'こう', kun: 'みなと' },
+    { char: '号', meaning: 'number / name', on: 'ごう', kun: '' },
+    { char: '根', meaning: 'root', on: 'こん', kun: 'ね' },
+    { char: '祭', meaning: 'festival', on: 'さい', kun: 'まつ' },
+    { char: '皿', meaning: 'plate / dish', on: '', kun: 'さら' },
+    { char: '仕', meaning: 'serve / work', on: 'し・じ', kun: 'つか' },
+    { char: '死', meaning: 'death', on: 'し', kun: 'し' },
+    { char: '使', meaning: 'use / messenger', on: 'し', kun: 'つか' },
+    { char: '始', meaning: 'begin', on: 'し', kun: 'はじ' },
+    { char: '指', meaning: 'finger / point', on: 'し', kun: 'ゆび・さ' },
+    { char: '歯', meaning: 'tooth', on: 'し', kun: 'は' },
+    { char: '詩', meaning: 'poem', on: 'し', kun: '' },
+    { char: '次', meaning: 'next', on: 'じ・し', kun: 'つぎ・つ' },
+    { char: '事', meaning: 'thing / matter', on: 'じ・ず', kun: 'こと' },
+    { char: '持', meaning: 'hold / have', on: 'じ', kun: 'も' },
+    { char: '式', meaning: 'ceremony / style', on: 'しき', kun: '' },
+    { char: '実', meaning: 'reality / fruit', on: 'じつ', kun: 'み・みの' },
+    { char: '写', meaning: 'copy / photo', on: 'しゃ', kun: 'うつ' },
+  ],
+  grade4: [
+    { char: '愛', meaning: 'love', on: 'あい', kun: '' },
+    { char: '案', meaning: 'plan / idea', on: 'あん', kun: '' },
+    { char: '以', meaning: 'by means of', on: 'い', kun: '' },
+    { char: '位', meaning: 'rank / position', on: 'い', kun: 'くらい' },
+    { char: '囲', meaning: 'surround', on: 'い', kun: 'かこ' },
+    { char: '胃', meaning: 'stomach', on: 'い', kun: '' },
+    { char: '印', meaning: 'seal / mark', on: 'いん', kun: 'しるし' },
+    { char: '英', meaning: 'English / hero', on: 'えい', kun: '' },
+    { char: '栄', meaning: 'prosperity', on: 'えい', kun: 'さか・は' },
+    { char: '塩', meaning: 'salt', on: 'えん', kun: 'しお' },
+    { char: '億', meaning: 'hundred million', on: 'おく', kun: '' },
+    { char: '加', meaning: 'add', on: 'か', kun: 'くわ' },
+    { char: '果', meaning: 'fruit / result', on: 'か', kun: 'は' },
+    { char: '課', meaning: 'lesson', on: 'か', kun: '' },
+    { char: '貨', meaning: 'cargo / currency', on: 'か', kun: '' },
+    { char: '芽', meaning: 'bud / sprout', on: 'が', kun: 'め' },
+    { char: '賀', meaning: 'congratulate', on: 'が', kun: '' },
+    { char: '改', meaning: 'reform', on: 'かい', kun: 'あらた' },
+    { char: '械', meaning: 'machine', on: 'かい', kun: '' },
+    { char: '害', meaning: 'harm', on: 'がい', kun: '' },
+    { char: '街', meaning: 'town / street', on: 'がい・かい', kun: 'まち' },
+    { char: '各', meaning: 'each', on: 'かく', kun: 'おのおの' },
+    { char: '覚', meaning: 'memorize / awake', on: 'かく', kun: 'おぼ・さ' },
+    { char: '潟', meaning: 'lagoon', on: '', kun: 'かた' },
+    { char: '完', meaning: 'complete', on: 'かん', kun: '' },
+    { char: '官', meaning: 'officer', on: 'かん', kun: '' },
+    { char: '管', meaning: 'pipe / control', on: 'かん', kun: 'くだ' },
+    { char: '観', meaning: 'view', on: 'かん', kun: '' },
+    { char: '関', meaning: 'connection / barrier', on: 'かん', kun: 'せき・かか' },
+    { char: '願', meaning: 'wish', on: 'がん', kun: 'ねが' },
+    { char: '希', meaning: 'hope / rare', on: 'き', kun: '' },
+    { char: '季', meaning: 'season', on: 'き', kun: '' },
+    { char: '旗', meaning: 'flag', on: 'き', kun: 'はた' },
+    { char: '器', meaning: 'vessel / instrument', on: 'き', kun: 'うつわ' },
+    { char: '機', meaning: 'machine / opportunity', on: 'き', kun: 'はた' },
+    { char: '議', meaning: 'discussion', on: 'ぎ', kun: '' },
+    { char: '求', meaning: 'seek / request', on: 'きゅう', kun: 'もと' },
+    { char: '泣', meaning: 'cry', on: 'きゅう', kun: 'な' },
+    { char: '救', meaning: 'rescue', on: 'きゅう', kun: 'すく' },
+    { char: '給', meaning: 'supply / salary', on: 'きゅう', kun: '' },
+  ],
+  grade5: [
+    { char: '圧', meaning: 'pressure', on: 'あつ', kun: '' },
+    { char: '移', meaning: 'shift / move', on: 'い', kun: 'うつ' },
+    { char: '因', meaning: 'cause', on: 'いん', kun: 'よ' },
+    { char: '永', meaning: 'eternity', on: 'えい', kun: 'なが' },
+    { char: '営', meaning: 'manage / conduct', on: 'えい', kun: 'いとな' },
+    { char: '衛', meaning: 'defense', on: 'えい', kun: '' },
+    { char: '易', meaning: 'easy / exchange', on: 'い・えき', kun: 'やさ' },
+    { char: '益', meaning: 'benefit', on: 'えき・やく', kun: '' },
+    { char: '液', meaning: 'liquid', on: 'えき', kun: '' },
+    { char: '演', meaning: 'perform', on: 'えん', kun: '' },
+    { char: '応', meaning: 'respond', on: 'おう', kun: 'こた' },
+    { char: '往', meaning: 'journey / go', on: 'おう', kun: '' },
+    { char: '桜', meaning: 'cherry blossom', on: 'おう', kun: 'さくら' },
+    { char: '恩', meaning: 'debt of gratitude', on: 'おん', kun: '' },
+    { char: '可', meaning: 'possible', on: 'か', kun: '' },
+    { char: '仮', meaning: 'temporary', on: 'か・け', kun: 'かり' },
+    { char: '価', meaning: 'value / price', on: 'か', kun: 'あたい' },
+    { char: '河', meaning: 'river', on: 'か', kun: 'かわ' },
+    { char: '過', meaning: 'pass / exceed', on: 'か', kun: 'す・あやま' },
+    { char: '賀', meaning: 'celebrate', on: 'が', kun: '' },
+    { char: '快', meaning: 'pleasant', on: 'かい', kun: 'こころよ' },
+    { char: '解', meaning: 'solve / untie', on: 'かい・げ', kun: 'と' },
+    { char: '格', meaning: 'status / rank', on: 'かく・こう', kun: '' },
+    { char: '確', meaning: 'certain', on: 'かく', kun: 'たし' },
+    { char: '額', meaning: 'amount / forehead', on: 'がく', kun: 'ひたい' },
+    { char: '刊', meaning: 'publish', on: 'かん', kun: '' },
+    { char: '幹', meaning: 'trunk / main', on: 'かん', kun: 'みき' },
+    { char: '慣', meaning: 'accustomed', on: 'かん', kun: 'な' },
+    { char: '眼', meaning: 'eyeball', on: 'がん・げん', kun: 'まなこ' },
+    { char: '基', meaning: 'foundation', on: 'き', kun: 'もと' },
+    { char: '寄', meaning: 'approach / donate', on: 'き', kun: 'よ' },
+    { char: '規', meaning: 'standard', on: 'き', kun: '' },
+    { char: '技', meaning: 'skill', on: 'ぎ', kun: 'わざ' },
+    { char: '義', meaning: 'righteousness', on: 'ぎ', kun: '' },
+    { char: '逆', meaning: 'opposite / reverse', on: 'ぎゃく', kun: 'さか' },
+    { char: '久', meaning: 'long time', on: 'きゅう・く', kun: 'ひさ' },
+    { char: '旧', meaning: 'old / former', on: 'きゅう', kun: '' },
+    { char: '居', meaning: 'reside', on: 'きょ', kun: 'い' },
+    { char: '許', meaning: 'permit', on: 'きょ', kun: 'ゆる' },
+    { char: '境', meaning: 'boundary', on: 'きょう・けい', kun: 'さかい' },
+  ],
+  grade6: [
+    { char: '異', meaning: 'different / strange', on: 'い', kun: 'こと' },
+    { char: '遺', meaning: 'bequeath', on: 'い', kun: '' },
+    { char: '域', meaning: 'region', on: 'いき', kun: '' },
+    { char: '宇', meaning: 'universe', on: 'う', kun: '' },
+    { char: '映', meaning: 'reflect / project', on: 'えい', kun: 'うつ・は' },
+    { char: '延', meaning: 'extend / postpone', on: 'えん', kun: 'の' },
+    { char: '沿', meaning: 'along', on: 'えん', kun: 'そ' },
+    { char: '我', meaning: 'self / I', on: 'が', kun: 'われ・わ' },
+    { char: '灰', meaning: 'ash', on: 'かい', kun: 'はい' },
+    { char: '拡', meaning: 'expand', on: 'かく', kun: '' },
+    { char: '革', meaning: 'leather / reform', on: 'かく', kun: 'かわ' },
+    { char: '閣', meaning: 'cabinet / tower', on: 'かく', kun: '' },
+    { char: '割', meaning: 'divide / proportion', on: 'かつ', kun: 'わ・さ' },
+    { char: '株', meaning: 'stock / stump', on: '', kun: 'かぶ' },
+    { char: '干', meaning: 'dry / shield', on: 'かん', kun: 'ほ・ひ' },
+    { char: '巻', meaning: 'volume / roll', on: 'かん', kun: 'ま' },
+    { char: '看', meaning: 'watch over', on: 'かん', kun: '' },
+    { char: '簡', meaning: 'simple', on: 'かん', kun: '' },
+    { char: '危', meaning: 'danger', on: 'き', kun: 'あぶ・あや' },
+    { char: '机', meaning: 'desk', on: 'き', kun: 'つくえ' },
+    { char: '揮', meaning: 'brandish / command', on: 'き', kun: '' },
+    { char: '貴', meaning: 'precious / noble', on: 'き', kun: 'とうと・たっと' },
+    { char: '疑', meaning: 'doubt', on: 'ぎ', kun: 'うたが' },
+    { char: '吸', meaning: 'inhale / suck', on: 'きゅう', kun: 'す' },
+    { char: '供', meaning: 'offer / accompany', on: 'きょう・く', kun: 'そな・とも' },
+    { char: '胸', meaning: 'chest / heart', on: 'きょう', kun: 'むね・むな' },
+    { char: '郷', meaning: 'hometown', on: 'きょう・ごう', kun: '' },
+    { char: '勤', meaning: 'work / diligent', on: 'きん・ごん', kun: 'つと' },
+    { char: '筋', meaning: 'muscle / logic', on: 'きん', kun: 'すじ' },
+    { char: '系', meaning: 'lineage / system', on: 'けい', kun: '' },
+    { char: '敬', meaning: 'respect', on: 'けい', kun: 'うやま' },
+    { char: '警', meaning: 'warn / police', on: 'けい', kun: '' },
+    { char: '劇', meaning: 'drama', on: 'げき', kun: '' },
+    { char: '激', meaning: 'violent / intense', on: 'げき', kun: 'はげ' },
+    { char: '穴', meaning: 'hole', on: 'けつ', kun: 'あな' },
+    { char: '絹', meaning: 'silk', on: 'けん', kun: 'きぬ' },
+    { char: '権', meaning: 'authority / right', on: 'けん・ごん', kun: '' },
+    { char: '憲', meaning: 'constitution', on: 'けん', kun: '' },
+  ],
+};
+
+const LEVELS = [
+  { id: 'radicals', label: '部首 · Radicals', sublabel: 'Building blocks', furigana: 'ぶしゅ' },
+  { id: 'grade1', label: '一年生 · Grade 1', sublabel: '80 kanji', furigana: 'いちねんせい' },
+  { id: 'grade2', label: '二年生 · Grade 2', sublabel: 'Daily life', furigana: 'にねんせい' },
+  { id: 'grade3', label: '三年生 · Grade 3', sublabel: 'Expanding', furigana: 'さんねんせい' },
+  { id: 'grade4', label: '四年生 · Grade 4', sublabel: 'Abstract concepts', furigana: 'よねんせい' },
+  { id: 'grade5', label: '五年生 · Grade 5', sublabel: 'Advanced', furigana: 'ごねんせい' },
+  { id: 'grade6', label: '六年生 · Grade 6', sublabel: 'Mastery', furigana: 'ろくねんせい' },
+];
+
+// ============================================================
+// FURIGANA CONTEXT & <JP> HELPER
+// ============================================================
+// Context avoids prop-drilling the toggle through every component.
+const FuriganaContext = createContext(false);
+
+// <JP text="漢字" reading="かんじ" /> renders:
+//   - Furigana OFF: just "漢字"
+//   - Furigana ON: ruby markup with "かんじ" above "漢字"
+//
+// For mixed strings (e.g., "第1 Set"), pass a `pairs` array instead:
+//   <JP pairs={[["第", "だい"], "1 Set"]} />
+//   Each item: tuple = [kanji, reading]; plain string = no reading.
+function JP({ text, reading, pairs, style }) {
+  const showFurigana = useContext(FuriganaContext);
+
+  if (pairs) {
+    return (
+      <span style={style}>
+        {pairs.map((p, i) => {
+          if (Array.isArray(p)) {
+            const [kanji, rt] = p;
+            if (showFurigana && rt) {
+              return (
+                <ruby key={i} style={styles.jpRuby}>
+                  {kanji}<rt style={styles.jpRt}>{rt}</rt>
+                </ruby>
+              );
+            }
+            return <span key={i}>{kanji}</span>;
+          }
+          return <span key={i}>{p}</span>;
+        })}
+      </span>
+    );
+  }
+
+  if (showFurigana && reading) {
+    return (
+      <ruby style={{ ...styles.jpRuby, ...style }}>
+        {text}<rt style={styles.jpRt}>{reading}</rt>
+      </ruby>
+    );
+  }
+  return <span style={style}>{text}</span>;
+}
+
+// Renders a level's label (e.g. "一年生 · Grade 1") with furigana on the kanji portion
+// when the toggle is on.
+function LevelTitle({ levelObj }) {
+  if (!levelObj) return null;
+  const parts = levelObj.label.split(' · ');
+  const jp = parts[0];
+  const rest = parts.slice(1).join(' · ');
+  return (
+    <>
+      <JP text={jp} reading={levelObj.furigana} />
+      {rest && ` · ${rest}`}
+    </>
+  );
+}
+
+// ============================================================
+// SPACED REPETITION (SM-2 simplified)
+// Intervals in days: 1 → 3 → 7 → 14 → 30 → 90
+// ============================================================
+const INTERVALS = [1, 3, 7, 14, 30, 90];
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+const getDueStatus = (card) => {
+  if (!card || !card.nextReview) return 'new';
+  const now = Date.now();
+  if (now >= card.nextReview) return 'due';
+  return 'learning';
+};
+
+const updateCardAfterReview = (card, quality) => {
+  // quality: 0=again, 1=hard, 2=good, 3=easy
+  const now = Date.now();
+  let stage = card?.stage ?? 0;
+  let totalReviews = (card?.totalReviews ?? 0) + 1;
+  let totalCorrect = (card?.totalCorrect ?? 0) + (quality >= 2 ? 1 : 0);
+  let totalLapses = (card?.totalLapses ?? 0) + (quality === 0 ? 1 : 0);
+
+  if (quality === 0) {
+    stage = 0;
+  } else if (quality === 1) {
+    stage = Math.max(0, stage);
+  } else if (quality === 2) {
+    stage = Math.min(INTERVALS.length - 1, stage + 1);
+  } else {
+    stage = Math.min(INTERVALS.length - 1, stage + 2);
+  }
+
+  const interval = INTERVALS[stage];
+  const nextReview = now + interval * MS_PER_DAY;
+
+  return {
+    stage,
+    nextReview,
+    lastReview: now,
+    totalReviews,
+    totalCorrect,
+    totalLapses,
+  };
+};
+
+// ============================================================
+// STORAGE HELPERS — Supabase backend
+// ============================================================
+// All data is stored in a single 'progress' table with schema:
+//   id: text primary key (e.g. "progress_grade1", "stats", "prefs")
+//   data: jsonb
+//   updated_at: timestamptz
+
+const SUPABASE_URL = 'https://haxgaviofzwoecfgsfgz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhheGdhdmlvZnp3b2VjZmdzZmd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMTg0NzQsImV4cCI6MjA5MjY5NDQ3NH0.3s6DVL_KSr_JlIFyEjgUPIuun5kNXZme_tn0okzj7Co';
+
+// Low-level Supabase upsert/fetch helpers
+const sbGet = async (id) => {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/progress?id=eq.${encodeURIComponent(id)}&select=data`,
+    { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+  );
+  if (!res.ok) return null;
+  const rows = await res.json();
+  return rows.length > 0 ? rows[0].data : null;
+};
+
+const sbSet = async (id, data) => {
+  await fetch(`${SUPABASE_URL}/rest/v1/progress`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates',
+    },
+    body: JSON.stringify({ id, data, updated_at: new Date().toISOString() }),
+  });
+};
+
+// localStorage fallback for offline resilience
+const lsGet = (key) => { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch { return null; } };
+const lsSet = (key, val) => { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} };
+
+const getProgressKey = (level) => `kanji_progress_${level}`;
+const STATS_KEY = 'kanji_stats';
+const PREFS_KEY = 'kanji_prefs';
+
+const loadProgress = async (level) => {
+  const key = getProgressKey(level);
+  try {
+    const remote = await sbGet(key);
+    if (remote) { lsSet(key, remote); return remote; }
+  } catch {}
+  return lsGet(key) || {};
+};
+
+const saveProgress = async (level, progress) => {
+  const key = getProgressKey(level);
+  lsSet(key, progress);
+  try { await sbSet(key, progress); } catch (e) { console.error('Save failed', e); }
+};
+
+const loadStats = async () => {
+  try {
+    const remote = await sbGet(STATS_KEY);
+    if (remote) { lsSet(STATS_KEY, remote); return remote; }
+  } catch {}
+  return lsGet(STATS_KEY) || { lastStudyDate: null, streak: 0, totalReviews: 0 };
+};
+
+const saveStats = async (stats) => {
+  lsSet(STATS_KEY, stats);
+  try { await sbSet(STATS_KEY, stats); } catch (e) { console.error('Save failed', e); }
+};
+
+const loadPrefs = async () => {
+  try {
+    const remote = await sbGet(PREFS_KEY);
+    if (remote) { lsSet(PREFS_KEY, remote); return remote; }
+  } catch {}
+  return lsGet(PREFS_KEY) || { showFurigana: false };
+};
+
+const savePrefs = async (prefs) => {
+  lsSet(PREFS_KEY, prefs);
+  try { await sbSet(PREFS_KEY, prefs); } catch (e) { console.error('Save failed', e); }
+};
+
+// ============================================================
+// EXPORT / IMPORT
+// ============================================================
+const EXPORT_VERSION = 1;
+const ALL_LEVELS = ['radicals', 'grade1', 'grade2', 'grade3', 'grade4', 'grade5', 'grade6'];
+
+// Gathers every piece of progress data across all levels into one bundle.
+const buildExportBundle = async () => {
+  const progressByLevel = {};
+  for (const lvl of ALL_LEVELS) {
+    progressByLevel[lvl] = await loadProgress(lvl);
+  }
+  const stats = await loadStats();
+  const prefs = await loadPrefs();
+  return {
+    version: EXPORT_VERSION,
+    exportedAt: new Date().toISOString(),
+    app: 'kanji-dojo',
+    progressByLevel,
+    stats,
+    prefs,
+  };
+};
+
+// Writes every piece of the bundle back to storage.
+const restoreBundle = async (bundle) => {
+  if (!bundle || bundle.app !== 'kanji-dojo') {
+    throw new Error('This does not look like a Kanji Dōjō backup file.');
+  }
+  if (bundle.version > EXPORT_VERSION) {
+    throw new Error('This backup was made with a newer version of the app.');
+  }
+  const { progressByLevel = {}, stats, prefs } = bundle;
+  for (const lvl of ALL_LEVELS) {
+    if (progressByLevel[lvl]) {
+      await saveProgress(lvl, progressByLevel[lvl]);
+    }
+  }
+  if (stats) await saveStats(stats);
+  if (prefs) await savePrefs(prefs);
+};
+
+// Triggers a browser download of the given JSON bundle.
+const downloadBundle = (bundle) => {
+  const json = JSON.stringify(bundle, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `kanji-dojo-backup-${today}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+// Reads a File (from an <input type=file>) and parses it as JSON.
+const readBundleFile = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      resolve(JSON.parse(reader.result));
+    } catch {
+      reject(new Error("Couldn't read that file — it may not be valid JSON."));
+    }
+  };
+  reader.onerror = () => reject(new Error('File could not be read.'));
+  reader.readAsText(file);
+});
+
+// Quick summary stats for the confirmation dialog before restoring.
+const summarizeBundle = (bundle) => {
+  if (!bundle?.progressByLevel) return 'No progress data found.';
+  let total = 0;
+  const perLevel = [];
+  for (const lvl of ALL_LEVELS) {
+    const p = bundle.progressByLevel[lvl] || {};
+    const count = Object.values(p).filter(c => c && c.totalReviews > 0).length;
+    if (count > 0) perLevel.push(`${lvl}: ${count}`);
+    total += count;
+  }
+  const when = bundle.exportedAt
+    ? new Date(bundle.exportedAt).toLocaleString()
+    : 'unknown date';
+  return `Exported ${when}\n${total} kanji with review history${perLevel.length ? `\n(${perLevel.join(', ')})` : ''}`;
+};
+
+// ============================================================
+// DESIGN SYSTEM — Sumi-e inspired
+// ============================================================
+const palette = {
+  washi: '#f4ede0',        // warm off-white background
+  washiDark: '#ebe2d0',
+  sumi: '#1a1814',         // ink black
+  sumiSoft: '#2d2821',
+  indigo: '#1d3557',       // deep traditional indigo
+  vermilion: '#b63a2d',    // torii red
+  gold: '#b8964e',         // antique gold
+  jade: '#5a7a5f',         // muted jade green
+  mist: '#9b958a',         // mist grey
+  paper: '#faf6ec',
+};
+
+const fontSerif = "'Shippori Mincho', 'Noto Serif JP', Georgia, serif";
+const fontDisplay = "'Shippori Mincho', 'Noto Serif JP', serif";
+const fontSans = "'Zen Kaku Gothic New', 'Noto Sans JP', sans-serif";
+
+// ============================================================
+// MAIN APP
+// ============================================================
+const SET_SIZE = 10;
+
+function KanjiApp() {
+  const [level, setLevel] = useState('radicals');
+  const [mode, setMode] = useState('dashboard'); // dashboard | setPicker | learn | match | quiz
+  const [currentSet, setCurrentSet] = useState(0); // which set of 10 the user selected
+  const [progress, setProgress] = useState({});
+  const [stats, setStats] = useState({ lastStudyDate: null, streak: 0, totalReviews: 0 });
+  const [showFurigana, setShowFurigana] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Load progress when level changes
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setCurrentSet(0);
+    (async () => {
+      const p = await loadProgress(level);
+      const s = await loadStats();
+      if (!cancelled) {
+        setProgress(p);
+        setStats(s);
+        setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [level]);
+
+  // Load prefs once on mount
+  useEffect(() => {
+    (async () => {
+      const p = await loadPrefs();
+      setShowFurigana(!!p.showFurigana);
+    })();
+  }, []);
+
+  const toggleFurigana = async () => {
+    const next = !showFurigana;
+    setShowFurigana(next);
+    await savePrefs({ showFurigana: next });
+  };
+
+  // Update a single card's progress
+  const updateCard = async (char, quality) => {
+    const current = progress[char] || {};
+    const updated = updateCardAfterReview(current, quality);
+    const newProgress = { ...progress, [char]: updated };
+    setProgress(newProgress);
+    await saveProgress(level, newProgress);
+
+    // Update streak/stats
+    const today = new Date().toDateString();
+    const last = stats.lastStudyDate;
+    let streak = stats.streak || 0;
+    if (last !== today) {
+      const yesterday = new Date(Date.now() - MS_PER_DAY).toDateString();
+      streak = last === yesterday ? streak + 1 : 1;
+    }
+    const newStats = {
+      lastStudyDate: today,
+      streak,
+      totalReviews: (stats.totalReviews || 0) + 1,
+    };
+    setStats(newStats);
+    await saveStats(newStats);
+  };
+
+  const kanjiList = KANJI_DATA[level] || [];
+
+  // Enrich kanji with progress, then deduplicate by character —
+  // merging meanings for any kanji that appears more than once in a level.
+  const enriched = useMemo(() => {
+    const seen = new Map();
+    for (const k of kanjiList) {
+      if (seen.has(k.char)) {
+        const existing = seen.get(k.char);
+        // Merge meanings if different (e.g. "earth / soil" + "soil" → "earth / soil")
+        const meanings = new Set([
+          ...existing.meaning.split(' / '),
+          ...k.meaning.split(' / '),
+        ]);
+        existing.meaning = [...meanings].join(' / ');
+      } else {
+        seen.set(k.char, {
+          ...k,
+          ...(progress[k.char] || {}),
+          status: getDueStatus(progress[k.char]),
+        });
+      }
+    }
+    return [...seen.values()];
+  }, [kanjiList, progress]);
+
+  // Break kanji into sets of 10
+  const sets = useMemo(() => {
+    const result = [];
+    for (let i = 0; i < enriched.length; i += SET_SIZE) {
+      const setCards = enriched.slice(i, i + SET_SIZE);
+      const learned = setCards.filter(c => c.totalReviews > 0).length;
+      const mastered = setCards.filter(c => (c.stage ?? 0) >= 4).length;
+      const due = setCards.filter(c => c.status === 'due').length;
+      result.push({
+        index: result.length,
+        cards: setCards,
+        learned,
+        mastered,
+        due,
+        total: setCards.length,
+        isComplete: learned === setCards.length,
+        isMastered: mastered === setCards.length,
+      });
+    }
+    return result;
+  }, [enriched]);
+
+  // The current set's cards, ordered: new first, then due, then others
+  const activeCards = useMemo(() => {
+    const set = sets[currentSet];
+    if (!set) return [];
+    const newOnes = set.cards.filter(c => c.status === 'new');
+    const dueOnes = set.cards.filter(c => c.status === 'due');
+    const others = set.cards.filter(c => c.status === 'learning');
+    return [...newOnes, ...dueOnes, ...others];
+  }, [sets, currentSet]);
+
+  const dueCards = enriched.filter(c => c.status === 'due' || c.status === 'new');
+  const learnedCards = enriched.filter(c => c.totalReviews > 0);
+  const masteredCards = enriched.filter(c => (c.stage ?? 0) >= 4);
+  const weakCards = enriched
+    .filter(c => c.totalReviews >= 2 && (c.totalLapses ?? 0) / c.totalReviews >= 0.3)
+    .sort((a, b) => (b.totalLapses / b.totalReviews) - (a.totalLapses / a.totalReviews));
+
+  return (
+    <FuriganaContext.Provider value={showFurigana}>
+    <div style={styles.root}>
+      <style>{globalCss}</style>
+      <Header level={level} setLevel={setLevel} mode={mode} setMode={setMode} stats={stats} showFurigana={showFurigana} toggleFurigana={toggleFurigana} />
+
+      {loading ? (
+        <div style={styles.loading}><JP pairs={[['筆', 'ふで'], 'を', ['準備中', 'じゅんびちゅう']]} />…</div>
+      ) : (
+        <main style={styles.main}>
+          {mode === 'dashboard' && (
+            <Dashboard
+              enriched={enriched}
+              dueCards={dueCards}
+              learnedCards={learnedCards}
+              masteredCards={masteredCards}
+              weakCards={weakCards}
+              stats={stats}
+              setMode={setMode}
+              levelObj={LEVELS.find(l => l.id === level)}
+            />
+          )}
+          {mode === 'setPicker' && (
+            <SetPicker
+              sets={sets}
+              onSelectSet={(i) => { setCurrentSet(i); setMode('learn'); }}
+              onBack={() => setMode('dashboard')}
+              levelObj={LEVELS.find(l => l.id === level)}
+            />
+          )}
+          {mode === 'learn' && (
+            <LearnMode
+              cards={activeCards}
+              setNumber={currentSet + 1}
+              totalSets={sets.length}
+              showFurigana={showFurigana}
+              onReview={updateCard}
+              onDone={() => setMode('setPicker')}
+              onBackToDashboard={() => setMode('dashboard')}
+            />
+          )}
+          {mode === 'match' && (
+            <MatchMode
+              cards={learnedCards.length >= 6 ? learnedCards : enriched.slice(0, 8)}
+              onDone={() => setMode('dashboard')}
+            />
+          )}
+          {mode === 'quiz' && (
+            <QuizMode
+              cards={learnedCards.length >= 4 ? learnedCards : enriched}
+              allCards={enriched}
+              showFurigana={showFurigana}
+              onReview={updateCard}
+              onDone={() => setMode('dashboard')}
+            />
+          )}
+        </main>
+      )}
+
+      <Footer />
+    </div>
+    </FuriganaContext.Provider>
+  );
+}
+
+// ============================================================
+// HEADER
+// ============================================================
+function Header({ level, setLevel, mode, setMode, stats, showFurigana, toggleFurigana }) {
+  return (
+    <header style={styles.header}>
+      <div style={styles.headerInner}>
+        <div style={styles.brand}>
+          <div style={styles.brandSeal}><JP text="書" reading="しょ" /></div>
+          <div>
+            <div style={styles.brandTitle}>
+              <JP pairs={[["漢字", "かんじ"], ["道場", "どうじょう"]]} />
+            </div>
+            <div style={styles.brandSub}>Kanji Dōjō · A path of practice</div>
+          </div>
+        </div>
+
+        <div style={styles.headerControls}>
+          <button
+            onClick={toggleFurigana}
+            style={{
+              ...styles.furiganaToggle,
+              ...(showFurigana ? styles.furiganaToggleOn : {}),
+            }}
+            title={showFurigana ? 'Hide furigana (readings)' : 'Show furigana (readings)'}
+          >
+            <span style={styles.furiganaToggleLabel}>
+              <ruby style={styles.furiganaToggleRuby}>
+                仮名<rt style={styles.furiganaToggleRt}>かな</rt>
+              </ruby>
+            </span>
+            <span style={styles.furiganaToggleState}>
+              {showFurigana ? 'ON' : 'OFF'}
+            </span>
+          </button>
+
+          <div style={styles.streakBadge}>
+            <span style={styles.streakFlame}>🔥</span>
+            <div>
+              <div style={styles.streakNum}>{stats.streak || 0}</div>
+              <div style={styles.streakLabel}>day streak</div>
+            </div>
+          </div>
+
+          <div style={styles.levelSelectWrap}>
+            <select
+              value={level}
+              onChange={e => setLevel(e.target.value)}
+              style={styles.levelSelect}
+            >
+              {LEVELS.map(l => (
+                <option key={l.id} value={l.id}>{l.label}</option>
+              ))}
+            </select>
+            {showFurigana && (
+              <div style={styles.levelSelectCaption}>
+                {LEVELS.find(l => l.id === level)?.furigana}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <nav style={styles.nav}>
+        {[
+          { id: 'dashboard', jpPairs: [['道場', 'どうじょう']], en: 'Dashboard' },
+          { id: 'setPicker', jpPairs: [['学', 'まな'], 'ぶ'], en: 'Learn' },
+          { id: 'match', jpPairs: [['合', 'あ'], 'わせ'], en: 'Match' },
+          { id: 'quiz', jpPairs: [['試験', 'しけん']], en: 'Quiz' },
+        ].map(t => {
+          const isActive = mode === t.id || (t.id === 'setPicker' && mode === 'learn');
+          return (
+            <button
+              key={t.id}
+              onClick={() => setMode(t.id)}
+              style={{
+                ...styles.navBtn,
+                ...(isActive ? styles.navBtnActive : {}),
+              }}
+            >
+              <JP pairs={t.jpPairs} /> {t.en}
+            </button>
+          );
+        })}
+      </nav>
+    </header>
+  );
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function Dashboard({ enriched, dueCards, learnedCards, masteredCards, weakCards, stats, setMode, levelObj }) {
+  const total = enriched.length;
+  const progressPct = total > 0 ? Math.round((learnedCards.length / total) * 100) : 0;
+  const masteryPct = total > 0 ? Math.round((masteredCards.length / total) * 100) : 0;
+
+  return (
+    <div style={styles.dashboard}>
+      <div style={styles.dashHero}>
+        <div style={styles.dashHeroText}>
+          <div style={styles.eyebrow}>Currently studying</div>
+          <h1 style={styles.dashTitle}><LevelTitle levelObj={levelObj} /></h1>
+          <p style={styles.dashSubtitle}>
+            {dueCards.length > 0
+              ? `${dueCards.length} kanji waiting for you today.`
+              : learnedCards.length === total
+                ? 'All caught up. Rest your brush today.'
+                : 'Ready when you are.'}
+          </p>
+          <div style={styles.dashCTA}>
+            <button onClick={() => setMode('setPicker')} style={styles.ctaPrimary}>
+              <JP pairs={[['始', 'はじ'], 'める']} /> · Start Studying
+            </button>
+            {learnedCards.length >= 6 && (
+              <button onClick={() => setMode('match')} style={styles.ctaSecondary}>
+                Memory Match
+              </button>
+            )}
+          </div>
+        </div>
+        <div style={styles.dashHeroArt}>
+          <EnsoCircle progress={progressPct / 100} />
+        </div>
+      </div>
+
+      <div style={styles.statGrid}>
+        <StatCard label="Due today" value={dueCards.length} accent={palette.vermilion} />
+        <StatCard label="Learning" value={learnedCards.length - masteredCards.length} accent={palette.indigo} />
+        <StatCard label="Mastered" value={masteredCards.length} accent={palette.gold} />
+        <StatCard label="Total reviews" value={stats.totalReviews || 0} accent={palette.jade} />
+      </div>
+
+      <div style={styles.dashGrid}>
+        <div style={styles.panel}>
+          <h2 style={styles.panelTitle}><JP text="進捗" reading="しんちょく" /> · Progress</h2>
+          <div style={styles.progressRow}>
+            <div style={styles.progressLabel}>Learned</div>
+            <div style={styles.progressBar}>
+              <div style={{ ...styles.progressFill, width: `${progressPct}%`, background: palette.indigo }} />
+            </div>
+            <div style={styles.progressPct}>{progressPct}%</div>
+          </div>
+          <div style={styles.progressRow}>
+            <div style={styles.progressLabel}>Mastered</div>
+            <div style={styles.progressBar}>
+              <div style={{ ...styles.progressFill, width: `${masteryPct}%`, background: palette.gold }} />
+            </div>
+            <div style={styles.progressPct}>{masteryPct}%</div>
+          </div>
+          <div style={styles.stagesRow}>
+            {INTERVALS.map((days, i) => {
+              const count = enriched.filter(c => (c.stage ?? -1) === i && c.totalReviews > 0).length;
+              return (
+                <div key={i} style={styles.stageCell}>
+                  <div style={styles.stageCount}>{count}</div>
+                  <div style={styles.stageDays}>{days}d</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={styles.panel}>
+          <h2 style={styles.panelTitle}><JP text="弱点" reading="じゃくてん" /> · Weak Kanji</h2>
+          {weakCards.length === 0 ? (
+            <p style={styles.emptyNote}>
+              {learnedCards.length < 3
+                ? 'Review a few kanji to identify weak spots.'
+                : 'No weak spots detected. Nicely done.'}
+            </p>
+          ) : (
+            <div style={styles.weakList}>
+              {weakCards.slice(0, 8).map(c => {
+                const failRate = Math.round((c.totalLapses / c.totalReviews) * 100);
+                return (
+                  <div key={c.char} style={styles.weakItem}>
+                    <div style={styles.weakChar}>{c.char}</div>
+                    <div style={styles.weakMeta}>
+                      <div style={styles.weakMeaning}>{c.meaning}</div>
+                      <div style={styles.weakRate}>{failRate}% miss rate · {c.totalReviews} reviews</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={styles.panel}>
+        <h2 style={styles.panelTitle}><JP text="全部" reading="ぜんぶ" /> · All Kanji in This Level</h2>
+        <div style={styles.kanjiGrid}>
+          {enriched.map(c => (
+            <div
+              key={c.char}
+              style={{
+                ...styles.kanjiCell,
+                ...(c.status === 'due' ? styles.kanjiCellDue : {}),
+                ...(c.status === 'new' ? styles.kanjiCellNew : {}),
+                ...((c.stage ?? 0) >= 4 ? styles.kanjiCellMastered : {}),
+              }}
+              title={`${c.meaning}${c.totalReviews ? ` · reviewed ${c.totalReviews}x` : ''}`}
+            >
+              <div style={styles.kanjiCellChar}>{c.char}</div>
+              <div style={styles.kanjiCellMeaning}>{c.meaning}</div>
+            </div>
+          ))}
+        </div>
+        <div style={styles.legend}>
+          <span><span style={{...styles.legendDot, background: palette.mist}} /> New</span>
+          <span><span style={{...styles.legendDot, background: palette.vermilion}} /> Due</span>
+          <span><span style={{...styles.legendDot, background: palette.indigo}} /> Learning</span>
+          <span><span style={{...styles.legendDot, background: palette.gold}} /> Mastered</span>
+        </div>
+      </div>
+
+      <BackupPanel totalReviews={stats.totalReviews || 0} />
+    </div>
+  );
+}
+
+function StatCard({ label, value, accent }) {
+  return (
+    <div style={{ ...styles.statCard, borderTopColor: accent }}>
+      <div style={styles.statValue}>{value}</div>
+      <div style={styles.statLabel}>{label}</div>
+    </div>
+  );
+}
+
+// ============================================================
+// BACKUP PANEL (Export / Import progress)
+// ============================================================
+function BackupPanel({ totalReviews }) {
+  const [status, setStatus] = useState(null); // { kind: 'success'|'error'|'info', text: string }
+  const [busy, setBusy] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleExport = async () => {
+    if (busy) return;
+    setBusy(true);
+    setStatus(null);
+    try {
+      const bundle = await buildExportBundle();
+      downloadBundle(bundle);
+      setStatus({ kind: 'success', text: 'Backup saved. Keep it in iCloud Drive or email it to yourself.' });
+    } catch (e) {
+      setStatus({ kind: 'error', text: 'Export failed: ' + (e.message || 'unknown error') });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleImportClick = () => {
+    if (busy) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = async (e) => {
+    const file = e.target.files?.[0];
+    // Reset the input so the same file can be re-selected later if needed.
+    e.target.value = '';
+    if (!file) return;
+
+    setBusy(true);
+    setStatus(null);
+
+    try {
+      const bundle = await readBundleFile(file);
+      const summary = summarizeBundle(bundle);
+
+      // If the device already has meaningful progress, require explicit confirmation.
+      const warning = totalReviews > 0
+        ? `\n\n⚠️  This device has ${totalReviews} reviews logged. Importing will REPLACE them.`
+        : '';
+
+      const ok = window.confirm(
+        `Restore this backup?\n\n${summary}${warning}\n\nThe page will reload after restoring.`
+      );
+      if (!ok) {
+        setBusy(false);
+        return;
+      }
+
+      await restoreBundle(bundle);
+      setStatus({ kind: 'success', text: 'Backup restored. Reloading…' });
+      setTimeout(() => window.location.reload(), 700);
+    } catch (e) {
+      setStatus({ kind: 'error', text: e.message || 'Import failed.' });
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={styles.panel}>
+      <h2 style={styles.panelTitle}>
+        <JP text="書庫" reading="しょこ" /> · Backup & Restore
+      </h2>
+      <p style={styles.backupBlurb}>
+        Claude stores progress per-device. Export a backup to keep it safe or move
+        it to another device — drop the file in iCloud Drive to keep your iPhone and Mac in sync.
+      </p>
+
+      <div style={styles.backupButtonRow}>
+        <button
+          onClick={handleExport}
+          disabled={busy}
+          style={{ ...styles.backupBtn, ...styles.backupBtnPrimary }}
+        >
+          ↓ Export backup
+        </button>
+        <button
+          onClick={handleImportClick}
+          disabled={busy}
+          style={{ ...styles.backupBtn, ...styles.backupBtnSecondary }}
+        >
+          ↑ Import backup
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          onChange={handleFileSelected}
+          style={{ display: 'none' }}
+        />
+      </div>
+
+      {status && (
+        <div
+          style={{
+            ...styles.backupStatus,
+            ...(status.kind === 'success' ? styles.backupStatusSuccess : {}),
+            ...(status.kind === 'error' ? styles.backupStatusError : {}),
+          }}
+        >
+          {status.text}
+        </div>
+      )}
+
+      <div style={styles.backupHint}>
+        Tip: back up weekly, or whenever you complete a set. Importing on an iPhone:
+        open Files → iCloud Drive → tap the backup → share to Claude → then tap Import here.
+      </div>
+    </div>
+  );
+}
+
+function EnsoCircle({ progress }) {
+  // Zen circle that fills as progress grows
+  const circumference = 2 * Math.PI * 80;
+  const offset = circumference * (1 - progress);
+  return (
+    <svg viewBox="0 0 200 200" style={{ width: '100%', height: '100%', maxWidth: 220 }}>
+      <circle cx="100" cy="100" r="80" fill="none" stroke={palette.washiDark} strokeWidth="6" />
+      <circle
+        cx="100" cy="100" r="80"
+        fill="none"
+        stroke={palette.sumi}
+        strokeWidth="10"
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        transform="rotate(-90 100 100)"
+        style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+      />
+      <text x="100" y="108" textAnchor="middle" fontSize="32" fontFamily={fontDisplay} fill={palette.sumi} fontWeight="600">
+        {Math.round(progress * 100)}%
+      </text>
+    </svg>
+  );
+}
+
+// ============================================================
+// LEARN MODE (Flashcards with SRS)
+// ============================================================
+// ============================================================
+// SET PICKER
+// ============================================================
+function SetPicker({ sets, onSelectSet, onBack, levelObj }) {
+  if (sets.length === 0) {
+    return <div style={styles.loading}>No kanji in this level.</div>;
+  }
+
+  return (
+    <div style={styles.setPickerArea}>
+      <div style={styles.setPickerHeader}>
+        <div>
+          <div style={styles.eyebrow}>Choose a set · <LevelTitle levelObj={levelObj} /></div>
+          <h1 style={styles.setPickerTitle}>Ten kanji at a time</h1>
+          <p style={styles.setPickerSub}>
+            Small batches commit better to memory. Pick a set to study.
+          </p>
+        </div>
+        <button onClick={onBack} style={styles.exitBtn}>← Dashboard</button>
+      </div>
+
+      <div style={styles.setGrid}>
+        {sets.map(set => {
+          const progressPct = Math.round((set.learned / set.total) * 100);
+          const masteryPct = Math.round((set.mastered / set.total) * 100);
+          return (
+            <button
+              key={set.index}
+              onClick={() => onSelectSet(set.index)}
+              style={{
+                ...styles.setCard,
+                ...(set.isMastered ? styles.setCardMastered : {}),
+                ...(set.due > 0 ? styles.setCardDue : {}),
+              }}
+            >
+              <div style={styles.setCardHeader}>
+                <div style={styles.setNumber}>
+                  <span style={styles.setNumberKanji}>
+                    <JP text="第" reading="だい" />{set.index + 1}
+                  </span>
+                  <span style={styles.setNumberLabel}>Set {set.index + 1}</span>
+                </div>
+                {set.isMastered && <div style={styles.setSeal}><JP text="極" reading="きわみ" /></div>}
+                {!set.isMastered && set.due > 0 && (
+                  <div style={styles.setDueBadge}>{set.due} due</div>
+                )}
+              </div>
+
+              <div style={styles.setPreview}>
+                {set.cards.slice(0, 10).map((c, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      ...styles.setPreviewChar,
+                      opacity: c.totalReviews > 0 ? 1 : 0.35,
+                      color: (c.stage ?? 0) >= 4 ? palette.gold : palette.sumi,
+                    }}
+                  >
+                    {c.char}
+                  </span>
+                ))}
+              </div>
+
+              <div style={styles.setFooter}>
+                <div style={styles.setProgressLine}>
+                  <div style={styles.setProgressTrack}>
+                    <div style={{ ...styles.setProgressFill, width: `${progressPct}%`, background: palette.indigo }} />
+                    <div style={{ ...styles.setProgressFill, width: `${masteryPct}%`, background: palette.gold, position: 'absolute', top: 0, left: 0 }} />
+                  </div>
+                  <div style={styles.setProgressText}>
+                    {set.learned}/{set.total}
+                  </div>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={styles.setLegend}>
+        <span><span style={{ ...styles.legendDot, background: palette.indigo }} /> Learned</span>
+        <span><span style={{ ...styles.legendDot, background: palette.gold }} /> Mastered</span>
+        <span><span style={{ ...styles.legendDot, background: palette.vermilion }} /> Has cards due</span>
+        <span style={{ fontFamily: fontDisplay, color: palette.gold }}><JP text="極" reading="きわみ" /> = fully mastered</span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// LEARN MODE (Flashcards with binary rating)
+// ============================================================
+function LearnMode({ cards, setNumber, totalSets, showFurigana, onReview, onDone, onBackToDashboard }) {
+  const [index, setIndex] = useState(0);
+  // A card is revealed only when revealedIndex matches the current index.
+  // Advancing to the next card changes index but NOT revealedIndex, so the
+  // new card is always hidden in the same React render — no flash possible.
+  const [revealedIndex, setRevealedIndex] = useState(-1);
+  const revealed = revealedIndex === index;
+  const [results, setResults] = useState({ known: 0, unknown: 0 });
+  const [finished, setFinished] = useState(false);
+
+  if (cards.length === 0) {
+    return (
+      <div style={styles.emptyScreen}>
+        <div style={styles.emptyKanji}><JP text="休" reading="やす" /></div>
+        <h2>This set is empty.</h2>
+        <p>Pick another set to study.</p>
+        <button onClick={onDone} style={styles.ctaPrimary}>Back to sets</button>
+      </div>
+    );
+  }
+
+  if (finished) {
+    const total = results.known + results.unknown;
+    const accuracy = total > 0 ? Math.round((results.known / total) * 100) : 0;
+    return (
+      <div style={styles.emptyScreen}>
+        <div style={styles.emptyKanji}><JP text="完" reading="かん" /></div>
+        <h2>Set {setNumber} complete</h2>
+        <div style={styles.completeStats}>
+          <div style={styles.completeStat}>
+            <div style={{ ...styles.completeStatValue, color: palette.jade }}>{results.known}</div>
+            <div style={styles.completeStatLabel}>knew it</div>
+          </div>
+          <div style={styles.completeStat}>
+            <div style={{ ...styles.completeStatValue, color: palette.vermilion }}>{results.unknown}</div>
+            <div style={styles.completeStatLabel}>didn't know</div>
+          </div>
+          <div style={styles.completeStat}>
+            <div style={{ ...styles.completeStatValue, color: palette.sumi }}>{accuracy}%</div>
+            <div style={styles.completeStatLabel}>accuracy</div>
+          </div>
+        </div>
+        <p style={{ color: palette.mist, marginBottom: 24 }}>
+          {results.unknown === 0
+            ? <><JP text="完璧" reading="かんぺき" />! Perfect recall.</>
+            : results.known === 0
+              ? 'First exposure is the hardest. These will return tomorrow.'
+              : 'Kanji you missed will return sooner. Rest well.'}
+        </p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button onClick={onDone} style={styles.ctaPrimary}>Choose another set</button>
+          <button onClick={onBackToDashboard} style={styles.ctaSecondary}>Dashboard</button>
+        </div>
+      </div>
+    );
+  }
+
+  const card = cards[index];
+  const hasReadings = (card.on && card.on.length > 0) || (card.kun && card.kun.length > 0);
+
+  const handleReview = async (knew) => {
+    const quality = knew ? 2 : 0;
+    await onReview(card.char, quality);
+    setResults(r => ({
+      known: r.known + (knew ? 1 : 0),
+      unknown: r.unknown + (knew ? 0 : 1),
+    }));
+    // Advance index only — revealedIndex stays behind, so new card is
+    // hidden in the exact same render. No separate setRevealed needed.
+    if (index + 1 >= cards.length) {
+      setFinished(true);
+    } else {
+      setIndex(i => i + 1);
+    }
+  };
+
+  return (
+    <div style={styles.studyArea}>
+      <div style={styles.studyHeader}>
+        <div style={styles.studyProgress}>
+          <div style={styles.studyCount}>
+            Set {setNumber} of {totalSets} · Card {index + 1} / {cards.length}
+          </div>
+          <div style={styles.studyBar}>
+            <div style={{ ...styles.studyBarFill, width: `${((index) / cards.length) * 100}%` }} />
+          </div>
+        </div>
+        <button onClick={onDone} style={styles.exitBtn}>✕ End session</button>
+      </div>
+
+      <div
+        style={{ ...styles.flashcard, ...(revealed ? styles.flashcardRevealed : {}) }}
+        onClick={(e) => { if (!revealed) { e.stopPropagation(); setRevealedIndex(index); } }}
+      >
+        {!revealed ? (
+          <>
+            {showFurigana && hasReadings && (
+              <ReadingRow on={card.on} kun={card.kun} />
+            )}
+            <div style={styles.flashKanji}>{card.char}</div>
+            <div style={styles.flashHint}>Tap to reveal meaning</div>
+          </>
+        ) : (
+          <>
+            <div style={styles.flashKanjiSmall}>{card.char}</div>
+            {hasReadings && (
+              <ReadingRow on={card.on} kun={card.kun} revealed />
+            )}
+            <div style={styles.flashMeaning}>{card.meaning}</div>
+            <div style={styles.flashMeta}>
+              {card.totalReviews > 0
+                ? `Stage ${(card.stage ?? 0) + 1} of ${INTERVALS.length} · seen ${card.totalReviews}x`
+                : 'New card'}
+            </div>
+          </>
+        )}
+      </div>
+
+      {revealed && (
+        <div style={styles.binaryRow}>
+          <button
+            onClick={(e) => { e.stopPropagation(); handleReview(false); }}
+            style={{ ...styles.binaryBtn, background: palette.vermilion }}
+          >
+            <div style={styles.binaryBtnLabel}><JP pairs={[['知', 'し'], 'らない']} /></div>
+            <div style={styles.binaryBtnSub}>I don't know it</div>
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); handleReview(true); }}
+            style={{ ...styles.binaryBtn, background: palette.jade }}
+          >
+            <div style={styles.binaryBtnLabel}><JP pairs={[['知', 'し'], 'ってる']} /></div>
+            <div style={styles.binaryBtnSub}>I know it</div>
+          </button>
+        </div>
+      )}
+
+      {!revealed && (
+        <div style={styles.hint}>
+          Recall the meaning in your head first, then tap the card.
+        </div>
+      )}
+
+      <div style={styles.sessionRunningTally}>
+        <span style={{ color: palette.jade }}>● {results.known}</span>
+        <span style={{ color: palette.vermilion }}>● {results.unknown}</span>
+      </div>
+    </div>
+  );
+}
+
+// Shared reading row used in Learn & Quiz.
+// `revealed` = styled as part of the answer reveal (larger, more prominent).
+function ReadingRow({ on, kun, revealed }) {
+  const hasOn = on && on.length > 0;
+  const hasKun = kun && kun.length > 0;
+  if (!hasOn && !hasKun) return null;
+  return (
+    <div style={revealed ? styles.readingRowRevealed : styles.readingRow}>
+      {hasOn && (
+        <div style={revealed ? styles.readingGroupRevealed : styles.readingGroup}>
+          <span style={styles.readingTag}>音</span>
+          <span style={revealed ? styles.readingTextRevealed : styles.readingText}>{on}</span>
+        </div>
+      )}
+      {hasKun && (
+        <div style={revealed ? styles.readingGroupRevealed : styles.readingGroup}>
+          <span style={{...styles.readingTag, background: palette.jade}}>訓</span>
+          <span style={revealed ? styles.readingTextRevealed : styles.readingText}>{kun}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// MATCH MODE (Memory game)
+// ============================================================
+function MatchMode({ cards, onDone }) {
+  const [pool, setPool] = useState([]);
+  const [flipped, setFlipped] = useState([]);
+  const [matched, setMatched] = useState([]);
+  const [moves, setMoves] = useState(0);
+  const [startTime] = useState(Date.now());
+  const [won, setWon] = useState(false);
+
+  useEffect(() => {
+    // Take 8 random cards and build pairs
+    const shuffled = [...cards].sort(() => Math.random() - 0.5).slice(0, 8);
+    const deck = [];
+    shuffled.forEach((c, i) => {
+      deck.push({ id: `k-${i}`, pairId: i, type: 'kanji', char: c.char, meaning: c.meaning });
+      deck.push({ id: `m-${i}`, pairId: i, type: 'meaning', char: c.char, meaning: c.meaning });
+    });
+    setPool(deck.sort(() => Math.random() - 0.5));
+    setFlipped([]);
+    setMatched([]);
+    setMoves(0);
+    setWon(false);
+  }, []);
+
+  useEffect(() => {
+    if (flipped.length === 2) {
+      setMoves(m => m + 1);
+      const [a, b] = flipped;
+      if (a.pairId === b.pairId && a.type !== b.type) {
+        setTimeout(() => {
+          setMatched(prev => [...prev, a.pairId]);
+          setFlipped([]);
+        }, 500);
+      } else {
+        setTimeout(() => setFlipped([]), 900);
+      }
+    }
+  }, [flipped]);
+
+  useEffect(() => {
+    if (pool.length > 0 && matched.length === pool.length / 2) {
+      setWon(true);
+    }
+  }, [matched, pool]);
+
+  const handleFlip = (card) => {
+    if (flipped.length >= 2) return;
+    if (flipped.find(f => f.id === card.id)) return;
+    if (matched.includes(card.pairId)) return;
+    setFlipped([...flipped, card]);
+  };
+
+  if (won) {
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    return (
+      <div style={styles.emptyScreen}>
+        <div style={styles.emptyKanji}><JP text="勝" reading="か" /></div>
+        <h2><JP text="見事" reading="みごと" />!  Well matched.</h2>
+        <p>{moves} moves · {elapsed} seconds</p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <button onClick={() => window.location.reload()} style={styles.ctaPrimary}>Play again</button>
+          <button onClick={onDone} style={styles.ctaSecondary}>Done</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.studyArea}>
+      <div style={styles.studyHeader}>
+        <div>
+          <div style={styles.studyCount}>{matched.length} / {pool.length / 2} pairs</div>
+          <div style={{ fontSize: 13, color: palette.mist, marginTop: 4 }}>{moves} moves</div>
+        </div>
+        <button onClick={onDone} style={styles.exitBtn}>✕ End session</button>
+      </div>
+
+      <div style={styles.matchGrid}>
+        {pool.map(card => {
+          const isFlipped = flipped.find(f => f.id === card.id) || matched.includes(card.pairId);
+          const isMatched = matched.includes(card.pairId);
+          return (
+            <button
+              key={card.id}
+              onClick={() => handleFlip(card)}
+              style={{
+                ...styles.matchCard,
+                ...(isFlipped ? styles.matchCardFlipped : {}),
+                ...(isMatched ? styles.matchCardMatched : {}),
+              }}
+            >
+              {isFlipped ? (
+                card.type === 'kanji' ? (
+                  <span style={styles.matchKanji}>{card.char}</span>
+                ) : (
+                  <span style={styles.matchMeaning}>{card.meaning}</span>
+                )
+              ) : (
+                <span style={styles.matchBack}><JP text="道" reading="みち" /></span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// QUIZ MODE (Multiple choice)
+// ============================================================
+function QuizMode({ cards, allCards, showFurigana, onReview, onDone }) {
+  const [questions, setQuestions] = useState([]);
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [correct, setCorrect] = useState(0);
+
+  useEffect(() => {
+    const pool = [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(10, cards.length));
+    const meaningPool = allCards.map(c => c.meaning);
+    const qs = pool.map(card => {
+      const wrongs = meaningPool
+        .filter(m => m !== card.meaning)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+      const options = [card.meaning, ...wrongs].sort(() => Math.random() - 0.5);
+      return { ...card, options };
+    });
+    setQuestions(qs);
+  }, []);
+
+  if (questions.length === 0) return <div style={styles.loading}>Preparing quiz…</div>;
+
+  const q = questions[index];
+
+  const handleSelect = async (option) => {
+    if (selected !== null) return;
+    setSelected(option);
+    const isRight = option === q.meaning;
+    if (isRight) setCorrect(c => c + 1);
+    // Update SRS based on quiz result
+    await onReview(q.char, isRight ? 2 : 0);
+  };
+
+  const handleNext = () => {
+    if (index + 1 >= questions.length) {
+      onDone();
+    } else {
+      setIndex(i => i + 1);
+      setSelected(null);
+    }
+  };
+
+  const isDone = selected !== null;
+
+  return (
+    <div style={styles.studyArea}>
+      <div style={styles.studyHeader}>
+        <div style={styles.studyProgress}>
+          <div style={styles.studyCount}>Question {index + 1} / {questions.length}</div>
+          <div style={styles.studyBar}>
+            <div style={{ ...styles.studyBarFill, width: `${((index) / questions.length) * 100}%` }} />
+          </div>
+        </div>
+        <div style={{ fontFamily: fontDisplay, color: palette.gold }}>{correct} correct</div>
+      </div>
+
+      <div style={styles.quizCard}>
+        {showFurigana && ((q.on && q.on.length > 0) || (q.kun && q.kun.length > 0)) && (
+          <ReadingRow on={q.on} kun={q.kun} />
+        )}
+        <div style={styles.quizKanji}>{q.char}</div>
+        <div style={styles.quizPrompt}>What does this mean?</div>
+      </div>
+
+      <div style={styles.quizOptions}>
+        {q.options.map(opt => {
+          let style = { ...styles.quizOption };
+          if (selected !== null) {
+            if (opt === q.meaning) style = { ...style, ...styles.quizOptionCorrect };
+            else if (opt === selected) style = { ...style, ...styles.quizOptionWrong };
+            else style = { ...style, opacity: 0.55 };
+          }
+          return (
+            <button
+              key={opt}
+              onClick={() => handleSelect(opt)}
+              style={style}
+              disabled={selected !== null}
+            >
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+
+      {isDone && (
+        <div style={styles.quizContinue}>
+          <button onClick={handleNext} style={styles.ctaPrimary}>
+            {index + 1 >= questions.length ? 'Finish' : 'Next question →'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// FOOTER
+// ============================================================
+function Footer() {
+  return (
+    <footer style={styles.footer}>
+      <div><JP pairs={[["漢字", "かんじ"], ["道場", "どうじょう"]]} /> · Built on spaced repetition (SM-2)</div>
+      <div style={{ opacity: 0.6 }}>Intervals: 1 → 3 → 7 → 14 → 30 → 90 days</div>
+    </footer>
+  );
+}
+
+// ============================================================
+// GLOBAL CSS
+// ============================================================
+const globalCss = `
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: ${palette.washi};
+  font-family: ${fontSans};
+  color: ${palette.sumi};
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: all 0.25s ease;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+select {
+  font-family: inherit;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes brushStroke {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+`;
+
+// ============================================================
+// STYLES
+// ============================================================
+const styles = {
+  // Ruby (furigana) base styles used by <JP>
+  jpRuby: {
+    rubyPosition: 'over',
+    rubyAlign: 'center',
+  },
+  jpRt: {
+    fontSize: '0.5em',
+    fontWeight: 400,
+    letterSpacing: 0.3,
+    opacity: 0.85,
+    fontFamily: fontSans,
+    userSelect: 'none',
+  },
+  root: {
+    minHeight: '100vh',
+    background: `
+      radial-gradient(ellipse at top left, rgba(29,53,87,0.04), transparent 40%),
+      radial-gradient(ellipse at bottom right, rgba(182,58,45,0.04), transparent 40%),
+      ${palette.washi}
+    `,
+    fontFamily: fontSans,
+    color: palette.sumi,
+    paddingBottom: 40,
+  },
+  loading: {
+    padding: 80,
+    textAlign: 'center',
+    fontFamily: fontDisplay,
+    color: palette.mist,
+    fontSize: 18,
+  },
+  header: {
+    background: palette.paper,
+    borderBottom: `1px solid ${palette.washiDark}`,
+    padding: '20px 32px 0',
+    position: 'sticky',
+    top: 0,
+    zIndex: 10,
+    boxShadow: '0 1px 0 rgba(0,0,0,0.03)',
+  },
+  headerInner: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 16,
+    flexWrap: 'wrap',
+    marginBottom: 16,
+  },
+  brand: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+  },
+  brandSeal: {
+    width: 48,
+    height: 48,
+    borderRadius: 6,
+    background: palette.vermilion,
+    color: palette.paper,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: fontDisplay,
+    fontSize: 28,
+    fontWeight: 700,
+    boxShadow: '2px 2px 0 rgba(0,0,0,0.1)',
+  },
+  brandTitle: {
+    fontFamily: fontDisplay,
+    fontSize: 22,
+    fontWeight: 700,
+    letterSpacing: 2,
+  },
+  brandSub: {
+    fontSize: 12,
+    color: palette.mist,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  headerControls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  streakBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    background: palette.washi,
+    padding: '8px 14px',
+    borderRadius: 4,
+    border: `1px solid ${palette.washiDark}`,
+  },
+  furiganaToggle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    background: palette.washi,
+    padding: '7px 13px',
+    borderRadius: 4,
+    border: `1px solid ${palette.washiDark}`,
+    color: palette.mist,
+    fontFamily: fontSans,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  furiganaToggleOn: {
+    background: palette.indigo,
+    borderColor: palette.indigo,
+    color: palette.paper,
+  },
+  furiganaToggleLabel: {
+    fontFamily: fontDisplay,
+    fontSize: 16,
+    fontWeight: 600,
+    lineHeight: 1,
+  },
+  furiganaToggleRuby: {
+    fontFamily: fontDisplay,
+  },
+  furiganaToggleRt: {
+    fontSize: 8,
+    fontWeight: 500,
+    letterSpacing: 0.5,
+    opacity: 0.75,
+  },
+  furiganaToggleState: {
+    fontSize: 11,
+    letterSpacing: 1.5,
+    fontWeight: 700,
+    paddingLeft: 10,
+    borderLeft: `1px solid currentColor`,
+    opacity: 0.85,
+  },
+  readingRow: {
+    display: 'flex',
+    gap: 14,
+    justifyContent: 'center',
+    marginBottom: 18,
+    flexWrap: 'wrap',
+    animation: 'fadeIn 0.25s ease',
+  },
+  readingRowRevealed: {
+    display: 'flex',
+    gap: 14,
+    justifyContent: 'center',
+    marginBottom: 18,
+    marginTop: 4,
+    flexWrap: 'wrap',
+  },
+  readingGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    background: palette.washi,
+    padding: '6px 14px',
+    borderRadius: 3,
+    border: `1px solid ${palette.washiDark}`,
+  },
+  readingGroupRevealed: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    background: palette.washi,
+    padding: '8px 16px',
+    borderRadius: 3,
+    border: `1px solid ${palette.washiDark}`,
+  },
+  readingTag: {
+    fontFamily: fontDisplay,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 0.5,
+    background: palette.indigo,
+    color: palette.paper,
+    padding: '2px 7px',
+    borderRadius: 2,
+    lineHeight: 1.3,
+  },
+  readingText: {
+    fontFamily: fontDisplay,
+    fontSize: 15,
+    color: palette.sumi,
+    letterSpacing: 1,
+    fontWeight: 500,
+  },
+  readingTextRevealed: {
+    fontFamily: fontDisplay,
+    fontSize: 17,
+    color: palette.sumi,
+    letterSpacing: 1,
+    fontWeight: 600,
+  },
+  streakFlame: {
+    fontSize: 22,
+  },
+  streakNum: {
+    fontFamily: fontDisplay,
+    fontSize: 20,
+    fontWeight: 700,
+    lineHeight: 1,
+    color: palette.vermilion,
+  },
+  streakLabel: {
+    fontSize: 10,
+    color: palette.mist,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  levelSelect: {
+    padding: '10px 14px',
+    border: `1px solid ${palette.sumiSoft}`,
+    background: palette.paper,
+    fontSize: 14,
+    borderRadius: 2,
+    fontFamily: fontDisplay,
+    color: palette.sumi,
+    cursor: 'pointer',
+    outline: 'none',
+  },
+  levelSelectWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 3,
+  },
+  levelSelectCaption: {
+    fontFamily: fontDisplay,
+    fontSize: 10,
+    color: palette.mist,
+    letterSpacing: 1,
+    textAlign: 'center',
+    lineHeight: 1.2,
+    paddingTop: 1,
+  },
+  nav: {
+    display: 'flex',
+    gap: 2,
+    borderBottom: `2px solid ${palette.sumi}`,
+  },
+  navBtn: {
+    padding: '12px 20px',
+    background: 'transparent',
+    color: palette.mist,
+    fontSize: 13,
+    fontFamily: fontDisplay,
+    letterSpacing: 1,
+    fontWeight: 500,
+    borderBottom: '3px solid transparent',
+    marginBottom: -2,
+  },
+  navBtnActive: {
+    color: palette.sumi,
+    borderBottomColor: palette.vermilion,
+    fontWeight: 700,
+  },
+  main: {
+    maxWidth: 1100,
+    margin: '0 auto',
+    padding: '32px 24px',
+    animation: 'fadeIn 0.4s ease',
+  },
+  // DASHBOARD
+  dashboard: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 24,
+  },
+  dashHero: {
+    background: palette.paper,
+    border: `1px solid ${palette.washiDark}`,
+    borderRadius: 4,
+    padding: '36px 40px',
+    display: 'grid',
+    gridTemplateColumns: '1fr auto',
+    gap: 32,
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  dashHeroText: {
+    minWidth: 0,
+  },
+  dashHeroArt: {
+    width: 200,
+    height: 200,
+  },
+  eyebrow: {
+    fontSize: 11,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    color: palette.vermilion,
+    fontWeight: 600,
+    marginBottom: 8,
+  },
+  dashTitle: {
+    fontFamily: fontDisplay,
+    fontSize: 38,
+    fontWeight: 700,
+    margin: '0 0 10px',
+    lineHeight: 1.1,
+  },
+  dashSubtitle: {
+    color: palette.mist,
+    fontSize: 15,
+    margin: '0 0 24px',
+    maxWidth: 440,
+  },
+  dashCTA: {
+    display: 'flex',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  ctaPrimary: {
+    padding: '14px 28px',
+    background: palette.sumi,
+    color: palette.paper,
+    fontFamily: fontDisplay,
+    fontSize: 15,
+    letterSpacing: 1.5,
+    fontWeight: 600,
+    borderRadius: 2,
+  },
+  ctaSecondary: {
+    padding: '14px 24px',
+    background: 'transparent',
+    color: palette.sumi,
+    border: `1.5px solid ${palette.sumi}`,
+    fontFamily: fontDisplay,
+    fontSize: 14,
+    letterSpacing: 1.5,
+    fontWeight: 500,
+    borderRadius: 2,
+  },
+  statGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+    gap: 12,
+  },
+  statCard: {
+    background: palette.paper,
+    border: `1px solid ${palette.washiDark}`,
+    borderTop: '3px solid',
+    borderRadius: 2,
+    padding: '20px 18px',
+    textAlign: 'center',
+  },
+  statValue: {
+    fontFamily: fontDisplay,
+    fontSize: 34,
+    fontWeight: 700,
+    lineHeight: 1,
+    color: palette.sumi,
+    marginBottom: 6,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: palette.mist,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  dashGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 16,
+  },
+  panel: {
+    background: palette.paper,
+    border: `1px solid ${palette.washiDark}`,
+    borderRadius: 4,
+    padding: '24px 28px',
+  },
+  panelTitle: {
+    fontFamily: fontDisplay,
+    fontSize: 18,
+    fontWeight: 700,
+    margin: '0 0 20px',
+    paddingBottom: 12,
+    borderBottom: `1px solid ${palette.washiDark}`,
+    letterSpacing: 1.5,
+  },
+  progressRow: {
+    display: 'grid',
+    gridTemplateColumns: '90px 1fr 50px',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  progressLabel: {
+    fontSize: 13,
+    color: palette.sumi,
+    fontWeight: 500,
+  },
+  progressBar: {
+    height: 8,
+    background: palette.washi,
+    borderRadius: 0,
+    overflow: 'hidden',
+    border: `1px solid ${palette.washiDark}`,
+  },
+  progressFill: {
+    height: '100%',
+    transition: 'width 0.6s ease',
+  },
+  progressPct: {
+    fontFamily: fontDisplay,
+    fontSize: 14,
+    color: palette.sumi,
+    textAlign: 'right',
+    fontWeight: 600,
+  },
+  stagesRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(6, 1fr)',
+    gap: 6,
+    marginTop: 20,
+    paddingTop: 16,
+    borderTop: `1px dashed ${palette.washiDark}`,
+  },
+  stageCell: {
+    textAlign: 'center',
+    padding: '8px 4px',
+    background: palette.washi,
+    borderRadius: 2,
+  },
+  stageCount: {
+    fontFamily: fontDisplay,
+    fontSize: 18,
+    fontWeight: 700,
+    color: palette.sumi,
+  },
+  stageDays: {
+    fontSize: 10,
+    color: palette.mist,
+    letterSpacing: 0.5,
+  },
+  weakList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  weakItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    padding: '10px 12px',
+    background: palette.washi,
+    borderLeft: `3px solid ${palette.vermilion}`,
+    borderRadius: 2,
+  },
+  weakChar: {
+    fontFamily: fontDisplay,
+    fontSize: 30,
+    fontWeight: 700,
+    color: palette.sumi,
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  weakMeta: {
+    flex: 1,
+  },
+  weakMeaning: {
+    fontSize: 14,
+    color: palette.sumi,
+    fontWeight: 500,
+    marginBottom: 2,
+  },
+  weakRate: {
+    fontSize: 11,
+    color: palette.vermilion,
+    letterSpacing: 0.5,
+  },
+  emptyNote: {
+    color: palette.mist,
+    fontSize: 13,
+    fontStyle: 'italic',
+    margin: 0,
+  },
+  // Backup panel
+  backupBlurb: {
+    color: palette.mist,
+    fontSize: 13,
+    lineHeight: 1.55,
+    margin: '0 0 18px',
+    maxWidth: 560,
+  },
+  backupButtonRow: {
+    display: 'flex',
+    gap: 10,
+    flexWrap: 'wrap',
+    marginBottom: 14,
+  },
+  backupBtn: {
+    padding: '12px 22px',
+    fontFamily: fontDisplay,
+    fontSize: 14,
+    letterSpacing: 1.2,
+    fontWeight: 600,
+    borderRadius: 2,
+    transition: 'all 0.2s ease',
+  },
+  backupBtnPrimary: {
+    background: palette.indigo,
+    color: palette.paper,
+  },
+  backupBtnSecondary: {
+    background: 'transparent',
+    color: palette.sumi,
+    border: `1.5px solid ${palette.sumi}`,
+  },
+  backupStatus: {
+    padding: '10px 14px',
+    borderRadius: 2,
+    fontSize: 13,
+    marginBottom: 12,
+    background: palette.washi,
+    border: `1px solid ${palette.washiDark}`,
+    color: palette.sumi,
+    whiteSpace: 'pre-line',
+  },
+  backupStatusSuccess: {
+    background: 'rgba(90,122,95,0.12)',
+    borderColor: palette.jade,
+    color: palette.jade,
+    fontWeight: 500,
+  },
+  backupStatusError: {
+    background: 'rgba(182,58,45,0.08)',
+    borderColor: palette.vermilion,
+    color: palette.vermilion,
+  },
+  backupHint: {
+    fontSize: 11,
+    color: palette.mist,
+    lineHeight: 1.55,
+    paddingTop: 12,
+    borderTop: `1px dashed ${palette.washiDark}`,
+    fontStyle: 'italic',
+  },
+  kanjiGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
+    gap: 6,
+  },
+  kanjiCell: {
+    background: palette.washi,
+    border: `1px solid ${palette.washiDark}`,
+    borderRadius: 2,
+    padding: '10px 4px 8px',
+    textAlign: 'center',
+    transition: 'all 0.2s',
+  },
+  kanjiCellNew: {
+    opacity: 0.7,
+  },
+  kanjiCellDue: {
+    borderColor: palette.vermilion,
+    background: 'rgba(182,58,45,0.06)',
+  },
+  kanjiCellMastered: {
+    borderColor: palette.gold,
+    background: 'rgba(184,150,78,0.1)',
+  },
+  kanjiCellChar: {
+    fontFamily: fontDisplay,
+    fontSize: 26,
+    fontWeight: 600,
+    lineHeight: 1,
+    marginBottom: 4,
+  },
+  kanjiCellMeaning: {
+    fontSize: 9,
+    color: palette.mist,
+    letterSpacing: 0.3,
+    lineHeight: 1.2,
+    minHeight: 22,
+  },
+  legend: {
+    display: 'flex',
+    gap: 18,
+    marginTop: 16,
+    paddingTop: 14,
+    borderTop: `1px dashed ${palette.washiDark}`,
+    fontSize: 11,
+    color: palette.mist,
+    flexWrap: 'wrap',
+  },
+  legendDot: {
+    display: 'inline-block',
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+    marginRight: 6,
+    verticalAlign: 'middle',
+  },
+  // STUDY AREA (shared)
+  studyArea: {
+    maxWidth: 720,
+    margin: '0 auto',
+    animation: 'fadeIn 0.4s ease',
+  },
+  studyHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 28,
+    gap: 16,
+  },
+  studyProgress: {
+    flex: 1,
+  },
+  studyCount: {
+    fontFamily: fontDisplay,
+    fontSize: 13,
+    color: palette.mist,
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  studyBar: {
+    height: 4,
+    background: palette.washiDark,
+    maxWidth: 300,
+  },
+  studyBarFill: {
+    height: '100%',
+    background: palette.sumi,
+    transition: 'width 0.4s ease',
+  },
+  exitBtn: {
+    padding: '8px 14px',
+    background: 'transparent',
+    color: palette.mist,
+    fontSize: 12,
+    letterSpacing: 1,
+    border: `1px solid ${palette.washiDark}`,
+    borderRadius: 2,
+  },
+  flashcard: {
+    background: palette.paper,
+    border: `1px solid ${palette.washiDark}`,
+    borderRadius: 4,
+    padding: '80px 40px',
+    textAlign: 'center',
+    cursor: 'pointer',
+    minHeight: 360,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+  },
+  flashcardRevealed: {
+    cursor: 'default',
+    background: palette.paper,
+    borderColor: palette.sumiSoft,
+  },
+  flashKanji: {
+    fontFamily: fontDisplay,
+    fontSize: 180,
+    fontWeight: 600,
+    lineHeight: 1,
+    color: palette.sumi,
+    marginBottom: 30,
+  },
+  flashKanjiSmall: {
+    fontFamily: fontDisplay,
+    fontSize: 110,
+    fontWeight: 600,
+    lineHeight: 1,
+    color: palette.sumi,
+    marginBottom: 20,
+  },
+  flashHint: {
+    fontSize: 12,
+    color: palette.mist,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  flashMeaning: {
+    fontFamily: fontDisplay,
+    fontSize: 30,
+    fontWeight: 600,
+    color: palette.indigo,
+    marginBottom: 14,
+  },
+  flashMeta: {
+    fontSize: 12,
+    color: palette.mist,
+    letterSpacing: 1,
+  },
+  ratingRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: 8,
+    marginTop: 20,
+  },
+  binaryRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 12,
+    marginTop: 20,
+  },
+  binaryBtn: {
+    padding: '26px 20px',
+    color: palette.paper,
+    borderRadius: 2,
+    textAlign: 'center',
+    fontFamily: fontSans,
+    transition: 'transform 0.15s, filter 0.15s',
+  },
+  binaryBtnLabel: {
+    fontFamily: fontDisplay,
+    fontSize: 22,
+    fontWeight: 700,
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
+  binaryBtnSub: {
+    fontSize: 12,
+    opacity: 0.88,
+    letterSpacing: 1,
+  },
+  sessionRunningTally: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: 20,
+    marginTop: 16,
+    fontSize: 13,
+    fontFamily: fontDisplay,
+    letterSpacing: 1,
+  },
+  // SET PICKER
+  setPickerArea: {
+    animation: 'fadeIn 0.4s ease',
+  },
+  setPickerHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 16,
+    marginBottom: 28,
+    flexWrap: 'wrap',
+  },
+  setPickerTitle: {
+    fontFamily: fontDisplay,
+    fontSize: 32,
+    fontWeight: 700,
+    margin: '6px 0 8px',
+    letterSpacing: 1,
+  },
+  setPickerSub: {
+    color: palette.mist,
+    fontSize: 14,
+    margin: 0,
+    maxWidth: 500,
+  },
+  setGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+    gap: 14,
+    marginBottom: 24,
+  },
+  setCard: {
+    background: palette.paper,
+    border: `1px solid ${palette.washiDark}`,
+    borderRadius: 4,
+    padding: '18px 20px 16px',
+    textAlign: 'left',
+    cursor: 'pointer',
+    fontFamily: fontSans,
+    color: palette.sumi,
+    transition: 'all 0.2s ease',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  setCardDue: {
+    borderLeft: `3px solid ${palette.vermilion}`,
+  },
+  setCardMastered: {
+    borderColor: palette.gold,
+    background: 'rgba(184,150,78,0.08)',
+  },
+  setCardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  setNumber: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  setNumberKanji: {
+    fontFamily: fontDisplay,
+    fontSize: 22,
+    fontWeight: 700,
+    lineHeight: 1,
+    color: palette.sumi,
+  },
+  setNumberLabel: {
+    fontSize: 10,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: palette.mist,
+    marginTop: 3,
+  },
+  setSeal: {
+    fontFamily: fontDisplay,
+    fontSize: 28,
+    fontWeight: 700,
+    color: palette.paper,
+    background: palette.gold,
+    width: 42,
+    height: 42,
+    borderRadius: 4,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '1px 1px 0 rgba(0,0,0,0.12)',
+  },
+  setDueBadge: {
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: 0.5,
+    color: palette.paper,
+    background: palette.vermilion,
+    padding: '4px 10px',
+    borderRadius: 2,
+  },
+  setPreview: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 4,
+    padding: '8px 0',
+    borderTop: `1px dashed ${palette.washiDark}`,
+    borderBottom: `1px dashed ${palette.washiDark}`,
+  },
+  setPreviewChar: {
+    fontFamily: fontDisplay,
+    fontSize: 22,
+    fontWeight: 600,
+    lineHeight: 1.1,
+  },
+  setFooter: {
+    fontSize: 11,
+  },
+  setProgressLine: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  },
+  setProgressTrack: {
+    flex: 1,
+    height: 6,
+    background: palette.washi,
+    borderRadius: 0,
+    overflow: 'hidden',
+    position: 'relative',
+    border: `1px solid ${palette.washiDark}`,
+  },
+  setProgressFill: {
+    height: '100%',
+    transition: 'width 0.5s ease',
+  },
+  setProgressText: {
+    fontFamily: fontDisplay,
+    fontSize: 12,
+    color: palette.sumi,
+    fontWeight: 600,
+    minWidth: 42,
+    textAlign: 'right',
+  },
+  setLegend: {
+    display: 'flex',
+    gap: 18,
+    padding: '16px 20px',
+    background: palette.paper,
+    border: `1px solid ${palette.washiDark}`,
+    borderRadius: 2,
+    fontSize: 12,
+    color: palette.mist,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  // Session complete
+  completeStats: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: 40,
+    margin: '20px 0 28px',
+    flexWrap: 'wrap',
+  },
+  completeStat: {
+    textAlign: 'center',
+  },
+  completeStatValue: {
+    fontFamily: fontDisplay,
+    fontSize: 42,
+    fontWeight: 700,
+    lineHeight: 1,
+    marginBottom: 6,
+  },
+  completeStatLabel: {
+    fontSize: 11,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: palette.mist,
+  },
+  rateBtn: {
+    padding: '18px 12px',
+    color: palette.paper,
+    borderRadius: 2,
+    textAlign: 'center',
+    fontFamily: fontSans,
+  },
+  rateLabel: {
+    fontFamily: fontDisplay,
+    fontSize: 16,
+    fontWeight: 700,
+    letterSpacing: 1,
+    marginBottom: 3,
+  },
+  rateSub: {
+    fontSize: 11,
+    opacity: 0.85,
+    letterSpacing: 0.5,
+  },
+  hint: {
+    textAlign: 'center',
+    marginTop: 18,
+    fontSize: 12,
+    color: palette.mist,
+    fontStyle: 'italic',
+  },
+  emptyScreen: {
+    textAlign: 'center',
+    padding: '80px 20px',
+  },
+  emptyKanji: {
+    fontFamily: fontDisplay,
+    fontSize: 120,
+    color: palette.washiDark,
+    marginBottom: 10,
+  },
+  // MATCH
+  matchGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: 10,
+  },
+  matchCard: {
+    aspectRatio: '1',
+    background: palette.sumi,
+    color: palette.paper,
+    borderRadius: 2,
+    fontSize: 16,
+    padding: 10,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.3s',
+    fontFamily: fontDisplay,
+    textAlign: 'center',
+    lineHeight: 1.2,
+  },
+  matchCardFlipped: {
+    background: palette.paper,
+    color: palette.sumi,
+    border: `1.5px solid ${palette.sumi}`,
+  },
+  matchCardMatched: {
+    background: 'rgba(90,122,95,0.15)',
+    borderColor: palette.jade,
+    color: palette.jade,
+    cursor: 'default',
+  },
+  matchKanji: {
+    fontSize: 44,
+    fontWeight: 700,
+    fontFamily: fontDisplay,
+  },
+  matchMeaning: {
+    fontSize: 13,
+    fontWeight: 500,
+    fontFamily: fontSans,
+    padding: '0 4px',
+  },
+  matchBack: {
+    fontSize: 34,
+    opacity: 0.15,
+    fontFamily: fontDisplay,
+  },
+  // QUIZ
+  quizCard: {
+    background: palette.paper,
+    border: `1px solid ${palette.washiDark}`,
+    borderRadius: 4,
+    padding: '50px 30px',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  quizKanji: {
+    fontFamily: fontDisplay,
+    fontSize: 140,
+    fontWeight: 600,
+    lineHeight: 1,
+    color: palette.sumi,
+    marginBottom: 16,
+  },
+  quizPrompt: {
+    fontSize: 13,
+    color: palette.mist,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  quizOptions: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 10,
+  },
+  quizOption: {
+    padding: '18px 20px',
+    background: palette.paper,
+    border: `1px solid ${palette.sumiSoft}`,
+    color: palette.sumi,
+    borderRadius: 2,
+    fontFamily: fontDisplay,
+    fontSize: 15,
+    fontWeight: 500,
+    textAlign: 'left',
+  },
+  quizOptionCorrect: {
+    background: palette.jade,
+    borderColor: palette.jade,
+    color: palette.paper,
+  },
+  quizOptionWrong: {
+    background: palette.vermilion,
+    borderColor: palette.vermilion,
+    color: palette.paper,
+  },
+  quizContinue: {
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  footer: {
+    maxWidth: 1100,
+    margin: '30px auto 0',
+    padding: '20px 24px',
+    textAlign: 'center',
+    fontSize: 11,
+    color: palette.mist,
+    letterSpacing: 1.2,
+    borderTop: `1px solid ${palette.washiDark}`,
+  },
+};
+
+
+    // Mount the app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<KanjiApp />);
+  </script>
+</body>
+</html>
